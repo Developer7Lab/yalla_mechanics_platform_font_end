@@ -2,13 +2,15 @@
 // ════════════════════════════════════════════════════════════════════════════
 //  UserDashboard.jsx  — complete user panel (single file)
 //
-//  Covers ALL /api/users routes:
+//  Covers ALL /api/users routes + new breakdown posts:
 //  GET  /api/users/profile
 //  PUT  /api/users/profile
 //  GET  /api/users/mechanics
 //  GET  /api/users/mechanics/:mechanicId/reviews
 //  POST /api/users/reviews
 //  GET  /api/users/my-reviews
+//  POST /api/users/breakdowns          ← NEW
+//  GET  /api/users/my-breakdowns       ← NEW
 // ════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -76,6 +78,25 @@ const Spin = () => (
     borderRadius: '50%', animation: 'rot .6s linear infinite', verticalAlign: 'middle',
   }} />
 );
+
+/* ── status badge ── */
+const StatusBadge = ({ status }) => {
+  const map = {
+    pending:    { color: '#fbbf24', bg: 'rgba(251,191,36,.12)',   icon: '⏳', label: 'قيد الانتظار' },
+    inProgress: { color: '#38bdf8', bg: 'rgba(56,189,248,.12)',   icon: '🔧', label: 'جاري العمل'   },
+    resolved:   { color: '#6ee7b7', bg: 'rgba(110,231,183,.12)',  icon: '✅', label: 'تم الحل'       },
+    cancelled:  { color: '#f87171', bg: 'rgba(248,113,113,.12)',  icon: '❌', label: 'ملغي'          },
+  };
+  const s = map[status] || map.pending;
+  return (
+    <span style={{
+      fontSize: '.72rem', fontWeight: 700, padding: '.2rem .6rem', borderRadius: 20,
+      background: s.bg, color: s.color, border: `1px solid ${s.color}33`,
+    }}>
+      {s.icon} {s.label}
+    </span>
+  );
+};
 
 /* ════════════════════════ PAGES ════════════════════════ */
 
@@ -414,14 +435,488 @@ const MyReviewsPage = ({ api, setToast }) => {
   );
 };
 
+/* ══════════════════════════════════════════════════════
+   6 ── Post Breakdown page  (NEW)
+   POST /api/users/breakdowns
+   ══════════════════════════════════════════════════════ */
+const CAR_BRANDS = [
+  'تويوتا','هوندا','نيسان','كيا','هيونداي','فورد','شيفروليه','بي إم دبليو',
+  'مرسيدس','أودي','فولكس واجن','مازدا','ميتسوبيشي','سوزوكي','جيب','لكزس','إنفينيتي',
+  'بورشه','لاند روفر','فولفو','أخرى',
+];
+const FUEL_TYPES  = ['بنزين','ديزل','كهربائي','هايبرد'];
+const TRANS_TYPES = ['أوتوماتيك','يدوي (عادي)'];
+
+const PostBreakdownPage = ({ api, accessToken, setToast, onDone }) => {
+  const [step, setStep]         = useState(1);
+  const [loading, setLoading]   = useState(false);
+  const [locLoading, setLocLoading] = useState(false);
+  const [images, setImages]     = useState([]); // { file, preview }
+
+  const [form, setForm] = useState({
+    // step 1 — car
+    carBrand:        '',
+    carModel:        '',
+    carYear:         '',
+    fuelType:        '',
+    transmission:    '',
+    mileage:         '',
+    // step 2 — problem
+    title:           '',
+    description:     '',
+    problemStarted:  '',
+    isRecurring:     false,
+    warningLights:   false,
+    carRunning:      true,
+    // step 3 — location
+    lat:             '',
+    lng:             '',
+    locationNote:    '',
+  });
+
+  /* image picker */
+  const handleImages = (e) => {
+    const files = Array.from(e.target.files);
+    const valid = files.filter(f => f.type.startsWith('image/') && f.size <= 5 * 1024 * 1024);
+    if (valid.length !== files.length) setToast({ type: 'error', text: 'بعض الصور تجاوزت 5MB أو غير مدعومة' });
+    const combined = [...images, ...valid.map(file => ({ file, preview: URL.createObjectURL(file) }))].slice(0, 5);
+    setImages(combined);
+  };
+  const removeImage = (idx) => setImages(prev => { URL.revokeObjectURL(prev[idx].preview); return prev.filter((_,i) => i !== idx); });
+
+  const f  = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
+  const fb = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.checked }));
+
+  /* get GPS */
+  const getLocation = () => {
+    if (!navigator.geolocation) { setToast({ type: 'error', text: 'المتصفح لا يدعم تحديد الموقع' }); return; }
+    setLocLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setForm(p => ({ ...p, lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6) }));
+        setLocLoading(false);
+      },
+      () => { setToast({ type: 'error', text: 'تعذّر تحديد الموقع' }); setLocLoading(false); }
+    );
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.lat || !form.lng) { setToast({ type: 'error', text: 'يرجى تحديد الموقع الجغرافي' }); return; }
+    try {
+      setLoading(true);
+      // Build FormData to support image uploads
+      const fd = new FormData();
+      fd.append('title',       form.title);
+      fd.append('description', form.description);
+      fd.append('carInfo',     JSON.stringify({
+        brand: form.carBrand, model: form.carModel, year: Number(form.carYear),
+        fuelType: form.fuelType, transmission: form.transmission, mileage: Number(form.mileage),
+      }));
+      fd.append('problemDetails', JSON.stringify({
+        startedAt: form.problemStarted, isRecurring: form.isRecurring,
+        warningLights: form.warningLights, carRunning: form.carRunning,
+      }));
+      fd.append('location', JSON.stringify({
+        lat: Number(form.lat), lng: Number(form.lng), note: form.locationNote,
+      }));
+      images.forEach(img => fd.append('photos', img.file));
+
+      const res = await fetch(`${API_BASE}/breakdowns`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Request failed');
+      setToast({ type: 'success', text: 'تم نشر منشور العطل بنجاح! 🚗' });
+      onDone();
+    } catch (err) {
+      setToast({ type: 'error', text: err.message });
+    } finally { setLoading(false); }
+  };
+
+  /* step validation */
+  const canNext1 = form.carBrand && form.carModel && form.carYear && form.fuelType && form.transmission;
+  const canNext2 = form.title && form.description;
+
+  const StepDots = () => (
+    <div style={{ display: 'flex', gap: 8, marginBottom: '1.8rem', alignItems: 'center' }}>
+      {[1,2,3].map(s => (
+        <React.Fragment key={s}>
+          <div style={{
+            width: step === s ? 32 : 10, height: 10,
+            borderRadius: 99,
+            background: s <= step ? 'linear-gradient(135deg,#0ea5e9,#6366f1)' : 'rgba(255,255,255,.1)',
+            transition: 'all .3s',
+            flexShrink: 0,
+          }} />
+          {s < 3 && <div style={{ flex:1, height:1, background: s < step ? 'rgba(14,165,233,.4)' : 'rgba(255,255,255,.08)' }} />}
+        </React.Fragment>
+      ))}
+      <span style={{ color:'rgba(255,255,255,.3)', fontSize:'.8rem', marginRight: 4 }}>
+        {step === 1 ? 'معلومات السيارة' : step === 2 ? 'وصف المشكلة' : 'الموقع الجغرافي'}
+      </span>
+    </div>
+  );
+
+  return (
+    <div className="page">
+      <div className="page-hdr">
+        <div className="page-title">🚨 نشر عطل سيارة</div>
+        <div className="page-sub">أخبر الميكانيكيين بمشكلة سيارتك واحصل على مساعدة سريعة</div>
+      </div>
+
+      <div className="card-glass" style={{ maxWidth: 620 }}>
+        <StepDots />
+
+        <form onSubmit={step < 3 ? (e) => { e.preventDefault(); setStep(s => s + 1); } : handleSubmit}>
+
+          {/* ── STEP 1: Car Info ── */}
+          {step === 1 && (
+            <div className="form-grid">
+              <div className="fg full">
+                <div className="section-label">🚗 معلومات السيارة</div>
+              </div>
+
+              <div className="fg">
+                <label className="lbl">نوع السيارة (الماركة) *</label>
+                <div className="inp-wrap">
+                  <span className="ico">🚗</span>
+                  <select className="inp inp-select" value={form.carBrand} onChange={f('carBrand')} required>
+                    <option value="">اختر الماركة...</option>
+                    {CAR_BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="fg">
+                <label className="lbl">الموديل *</label>
+                <div className="inp-wrap">
+                  <span className="ico">🏷️</span>
+                  <input className="inp" value={form.carModel} onChange={f('carModel')}
+                    placeholder="مثلاً: كامري، سيفيك..." required />
+                </div>
+              </div>
+
+              <div className="fg">
+                <label className="lbl">سنة الصنع *</label>
+                <div className="inp-wrap">
+                  <span className="ico">📅</span>
+                  <input className="inp" type="number" min="1990" max="2025"
+                    value={form.carYear} onChange={f('carYear')}
+                    placeholder="مثلاً: 2019" required />
+                </div>
+              </div>
+
+              <div className="fg">
+                <label className="lbl">نوع الوقود *</label>
+                <div className="inp-wrap">
+                  <span className="ico">⛽</span>
+                  <select className="inp inp-select" value={form.fuelType} onChange={f('fuelType')} required>
+                    <option value="">اختر نوع الوقود...</option>
+                    {FUEL_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="fg">
+                <label className="lbl">ناقل الحركة *</label>
+                <div className="inp-wrap">
+                  <span className="ico">⚙️</span>
+                  <select className="inp inp-select" value={form.transmission} onChange={f('transmission')} required>
+                    <option value="">اختر نوع الناقل...</option>
+                    {TRANS_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="fg">
+                <label className="lbl">عداد الكيلومترات (كم)</label>
+                <div className="inp-wrap">
+                  <span className="ico">🔢</span>
+                  <input className="inp" type="number" min="0"
+                    value={form.mileage} onChange={f('mileage')}
+                    placeholder="مثلاً: 85000" />
+                </div>
+              </div>
+
+              {/* Image upload */}
+              <div className="fg full">
+                <label className="lbl">صور السيارة / العطل (اختياري — حتى 5 صور، max 5MB لكل صورة)</label>
+                <label className="img-upload-area" htmlFor="car-imgs">
+                  <input id="car-imgs" type="file" accept="image/*" multiple style={{ display:'none' }} onChange={handleImages} />
+                  {images.length === 0 ? (
+                    <div className="img-upload-placeholder">
+                      <div style={{ fontSize:'2rem', marginBottom:'.4rem' }}>📷</div>
+                      <div style={{ fontWeight:700, color:'rgba(255,255,255,.5)', fontSize:'.9rem' }}>اضغط لرفع الصور</div>
+                      <div style={{ fontSize:'.75rem', color:'rgba(255,255,255,.25)', marginTop:'.2rem' }}>PNG، JPG، WEBP</div>
+                    </div>
+                  ) : (
+                    <div className="img-thumbs-row">
+                      {images.map((img, i) => (
+                        <div key={i} className="img-thumb-wrap">
+                          <img src={img.preview} className="img-thumb" alt={`car-${i}`} />
+                          <button type="button" className="img-remove" onClick={e => { e.preventDefault(); removeImage(i); }}>✕</button>
+                        </div>
+                      ))}
+                      {images.length < 5 && (
+                        <div className="img-add-more">
+                          <div style={{ fontSize:'1.4rem' }}>+</div>
+                          <div style={{ fontSize:'.72rem', color:'rgba(255,255,255,.3)' }}>إضافة</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </label>
+              </div>
+
+              <div className="fg full">
+                <button type="submit" className="btn-primary" disabled={!canNext1}>
+                  التالي: وصف المشكلة ←
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 2: Problem Description ── */}
+          {step === 2 && (
+            <div className="form-grid">
+              <div className="fg full">
+                <div className="section-label">🔍 وصف المشكلة</div>
+              </div>
+
+              <div className="fg full">
+                <label className="lbl">عنوان المشكلة *</label>
+                <div className="inp-wrap">
+                  <span className="ico">📝</span>
+                  <input className="inp" value={form.title} onChange={f('title')}
+                    placeholder="مثلاً: صوت غريب من المحرك عند التشغيل" required maxLength={120} />
+                </div>
+              </div>
+
+              <div className="fg full">
+                <label className="lbl">وصف المشكلة بالتفصيل * ({form.description.length}/1000)</label>
+                <textarea className="inp" rows={5} required maxLength={1000}
+                  value={form.description} onChange={f('description')}
+                  placeholder="اشرح المشكلة بشكل مفصّل: متى تحدث؟ كيف تبدأ؟ هل هناك أصوات أو روائح غريبة؟..."
+                  style={{ resize: 'vertical', paddingTop: '.75rem' }} />
+              </div>
+
+              <div className="fg">
+                <label className="lbl">متى بدأت المشكلة؟</label>
+                <div className="inp-wrap">
+                  <span className="ico">📅</span>
+                  <input className="inp" type="date" value={form.problemStarted} onChange={f('problemStarted')} />
+                </div>
+              </div>
+
+              <div className="fg" style={{ justifyContent: 'flex-end' }}>
+                <div className="toggle-group">
+                  <label className="toggle-row">
+                    <input type="checkbox" className="toggle-cb" checked={form.isRecurring} onChange={fb('isRecurring')} />
+                    <div className="toggle-track"><div className="toggle-thumb" /></div>
+                    <span className="toggle-lbl">المشكلة تتكرر أحياناً</span>
+                  </label>
+                  <label className="toggle-row">
+                    <input type="checkbox" className="toggle-cb" checked={form.warningLights} onChange={fb('warningLights')} />
+                    <div className="toggle-track"><div className="toggle-thumb" /></div>
+                    <span className="toggle-lbl">ظهرت لمبة تحذير في الطبلون</span>
+                  </label>
+                  <label className="toggle-row">
+                    <input type="checkbox" className="toggle-cb" checked={form.carRunning} onChange={fb('carRunning')} />
+                    <div className="toggle-track"><div className="toggle-thumb" /></div>
+                    <span className="toggle-lbl">السيارة لا تزال تعمل</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="fg full" style={{ display: 'flex', gap: '.75rem' }}>
+                <button type="button" className="btn-back" style={{ flex:1, textAlign:'center', justifyContent:'center' }}
+                  onClick={() => setStep(1)}>
+                  → رجوع
+                </button>
+                <button type="submit" className="btn-primary" style={{ flex:2 }} disabled={!canNext2}>
+                  التالي: الموقع الجغرافي ←
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 3: Location ── */}
+          {step === 3 && (
+            <div className="form-grid">
+              <div className="fg full">
+                <div className="section-label">📍 الموقع الجغرافي</div>
+              </div>
+
+              <div className="fg full">
+                <button type="button" className="btn-locate" onClick={getLocation} disabled={locLoading}>
+                  {locLoading ? <><Spin /> جاري تحديد الموقع...</> : '📡 تحديد موقعي الحالي تلقائياً'}
+                </button>
+              </div>
+
+              {form.lat && form.lng && (
+                <div className="fg full">
+                  <div className="loc-preview">
+                    <div className="loc-pin">📍</div>
+                    <div>
+                      <div style={{ color: '#6ee7b7', fontWeight: 700, fontSize: '.88rem' }}>تم تحديد الموقع بنجاح</div>
+                      <div style={{ color: 'rgba(255,255,255,.35)', fontSize: '.78rem', marginTop: '.15rem' }}>
+                        خط العرض: {form.lat} | خط الطول: {form.lng}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="fg">
+                <label className="lbl">خط العرض (Latitude)</label>
+                <div className="inp-wrap">
+                  <span className="ico">↕️</span>
+                  <input className="inp" type="number" step="any"
+                    value={form.lat} onChange={f('lat')}
+                    placeholder="مثلاً: 24.7136" />
+                </div>
+              </div>
+
+              <div className="fg">
+                <label className="lbl">خط الطول (Longitude)</label>
+                <div className="inp-wrap">
+                  <span className="ico">↔️</span>
+                  <input className="inp" type="number" step="any"
+                    value={form.lng} onChange={f('lng')}
+                    placeholder="مثلاً: 46.6753" />
+                </div>
+              </div>
+
+              <div className="fg full">
+                <label className="lbl">ملاحظة إضافية للموقع</label>
+                <div className="inp-wrap">
+                  <span className="ico">🗺️</span>
+                  <input className="inp" value={form.locationNote} onChange={f('locationNote')}
+                    placeholder="مثلاً: أمام مجمع الملك عبدالله، الشارع الرئيسي..." />
+                </div>
+              </div>
+
+              {/* Summary preview */}
+              <div className="fg full">
+                <div className="summary-card">
+                  <div className="summary-title">📋 ملخص المنشور</div>
+                  <div className="summary-row"><span className="sk">السيارة:</span><span className="sv">{form.carBrand} {form.carModel} {form.carYear}</span></div>
+                  <div className="summary-row"><span className="sk">الوقود:</span><span className="sv">{form.fuelType}</span></div>
+                  <div className="summary-row"><span className="sk">المشكلة:</span><span className="sv">{form.title || '—'}</span></div>
+                  <div className="summary-row">
+                    <span className="sk">الموقع:</span>
+                    <span className="sv">{form.lat && form.lng ? `${form.lat}, ${form.lng}` : 'لم يُحدَّد بعد'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="fg full" style={{ display: 'flex', gap: '.75rem' }}>
+                <button type="button" className="btn-back" style={{ flex:1, textAlign:'center', justifyContent:'center' }}
+                  onClick={() => setStep(2)}>
+                  → رجوع
+                </button>
+                <button type="submit" className="btn-primary" style={{ flex:2 }} disabled={loading}>
+                  {loading ? <><Spin /> جاري النشر...</> : '🚨 نشر منشور العطل'}
+                </button>
+              </div>
+            </div>
+          )}
+        </form>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════
+   7 ── My Breakdowns page  (NEW)
+   GET /api/users/my-breakdowns
+   ══════════════════════════════════════════════════════ */
+const MyBreakdownsPage = ({ api, setToast, onNew }) => {
+  const [breakdowns, setBreakdowns] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api('/my-breakdowns')
+      .then(r => setBreakdowns(r.data))
+      .catch(err => setToast({ type: 'error', text: err.message }))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="page">
+      <div className="page-hdr" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <div className="page-title">منشوراتي</div>
+          <div className="page-sub">{breakdowns.length} منشور عطل</div>
+        </div>
+        <button className="btn-new" onClick={onNew}>+ نشر عطل جديد</button>
+      </div>
+
+      {loading ? (
+        <div className="center-msg"><Spin /> جاري التحميل...</div>
+      ) : breakdowns.length === 0 ? (
+        <div className="empty-state">
+          <div style={{ fontSize: '3.5rem', marginBottom: '.7rem' }}>🚗</div>
+          <div style={{ marginBottom: '1rem' }}>لم تنشر أي منشور عطل بعد</div>
+          <button className="btn-primary" style={{ maxWidth: 220 }} onClick={onNew}>
+            🚨 نشر أول منشور
+          </button>
+        </div>
+      ) : (
+        <div className="bd-list">
+          {breakdowns.map(b => (
+            <div key={b._id} className="bd-card">
+              <div className="bd-card-top">
+                <div className="bd-car-info">
+                  <div className="bd-car-icon">🚗</div>
+                  <div>
+                    <div className="bd-car-name">
+                      {b.carInfo?.brand} {b.carInfo?.model}
+                      {b.carInfo?.year && <span className="bd-year"> — {b.carInfo.year}</span>}
+                    </div>
+                    <div className="bd-meta">
+                      {b.carInfo?.fuelType && <span className="bd-tag">{b.carInfo.fuelType}</span>}
+                      {b.carInfo?.transmission && <span className="bd-tag">{b.carInfo.transmission}</span>}
+                      {b.carInfo?.mileage && <span className="bd-tag">🔢 {b.carInfo.mileage.toLocaleString()} كم</span>}
+                    </div>
+                  </div>
+                </div>
+                <StatusBadge status={b.status || 'pending'} />
+              </div>
+
+              <div className="bd-title">{b.title}</div>
+              <div className="bd-desc">{b.description}</div>
+
+              <div className="bd-footer">
+                <div className="bd-footer-row">
+                  {b.location?.lat && (
+                    <span className="bd-info-chip">📍 {Number(b.location.lat).toFixed(4)}, {Number(b.location.lng).toFixed(4)}</span>
+                  )}
+                  {b.problemDetails?.warningLights && <span className="bd-info-chip warn">⚠️ لمبة تحذير</span>}
+                  {b.problemDetails?.isRecurring   && <span className="bd-info-chip">🔁 متكررة</span>}
+                  {b.problemDetails?.carRunning === false && <span className="bd-info-chip err">🔴 السيارة واقفة</span>}
+                </div>
+                <div className="bd-date">{new Date(b.createdAt).toLocaleDateString('ar')}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* ════════════════════ MAIN APP ════════════════════ */
 export default function UserDashboard() {
   const [accessToken] = useState(() => localStorage.getItem('accessToken') || '');
-  const [user, setUser]     = useState(null);
-  const [page, setPage]     = useState('profile'); // profile | mechanics | my-reviews
-  const [subPage, setSubPage] = useState(null);    // { type: 'reviews'|'write', mechanic }
-  const [toast, setToastState] = useState({ type: '', text: '' });
-  const [mounted, setMounted] = useState(false);
+  const [user, setUser]         = useState(null);
+  const [page, setPage]         = useState('profile');
+  const [subPage, setSubPage]   = useState(null);
+  const [toast, setToastState]  = useState({ type: '', text: '' });
+  const [mounted, setMounted]   = useState(false);
 
   const api = useApi(accessToken);
 
@@ -439,9 +934,10 @@ export default function UserDashboard() {
   }, []);
 
   const navItems = [
-    { key: 'profile',    icon: '👤', label: 'الملف الشخصي' },
-    { key: 'mechanics',  icon: '🔧', label: 'الميكانيكيون' },
-    { key: 'my-reviews', icon: '⭐', label: 'تقييماتي' },
+    { key: 'profile',       icon: '👤', label: 'الملف الشخصي' },
+    { key: 'mechanics',     icon: '🔧', label: 'الميكانيكيون' },
+    { key: 'my-reviews',    icon: '⭐', label: 'تقييماتي'      },
+    { key: 'my-breakdowns', icon: '🚨', label: 'منشوراتي'      },
   ];
 
   const goPage = (k) => { setPage(k); setSubPage(null); };
@@ -454,29 +950,30 @@ export default function UserDashboard() {
 
   if (!accessToken) {
     return (
-      <div style={{ minHeight: '100vh', background: '#080810', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Tajawal,sans-serif', color: '#fff', direction: 'rtl', fontSize: '1.1rem' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔐</div>
+      <div style={{ minHeight:'100vh', background:'#080810', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Tajawal,sans-serif', color:'#fff', direction:'rtl', fontSize:'1.1rem' }}>
+        <div style={{ textAlign:'center' }}>
+          <div style={{ fontSize:'3rem', marginBottom:'1rem' }}>🔐</div>
           <div>يجب تسجيل الدخول أولاً</div>
-          <div style={{ color: 'rgba(255,255,255,.4)', marginTop: '.5rem', fontSize: '.9rem' }}>لا يوجد accessToken في localStorage</div>
+          <div style={{ color:'rgba(255,255,255,.4)', marginTop:'.5rem', fontSize:'.9rem' }}>لا يوجد accessToken في localStorage</div>
         </div>
       </div>
     );
   }
 
-  /* ── render active page ── */
   const renderPage = () => {
     if (subPage?.type === 'reviews') return (
-      <MechanicReviewsPage api={api} mechanic={subPage.mechanic} setToast={setToast}
-        onBack={() => setSubPage(null)} />
+      <MechanicReviewsPage api={api} mechanic={subPage.mechanic} setToast={setToast} onBack={() => setSubPage(null)} />
     );
     if (subPage?.type === 'write') return (
-      <WriteReviewPage api={api} mechanic={subPage.mechanic} setToast={setToast}
-        onBack={() => setSubPage(null)} />
+      <WriteReviewPage api={api} mechanic={subPage.mechanic} setToast={setToast} onBack={() => setSubPage(null)} />
     );
-    if (page === 'profile')    return <ProfilePage    api={api} initialUser={user} onUpdate={setUser} setToast={setToast} />;
-    if (page === 'mechanics')  return <MechanicsPage  api={api} setToast={setToast} onSelectMechanic={handleSelectMechanic} />;
-    if (page === 'my-reviews') return <MyReviewsPage  api={api} setToast={setToast} />;
+    if (subPage?.type === 'post-breakdown') return (
+      <PostBreakdownPage api={api} accessToken={accessToken} setToast={setToast} onDone={() => { setSubPage(null); setPage('my-breakdowns'); }} />
+    );
+    if (page === 'profile')       return <ProfilePage       api={api} initialUser={user} onUpdate={setUser} setToast={setToast} />;
+    if (page === 'mechanics')     return <MechanicsPage     api={api} setToast={setToast} onSelectMechanic={handleSelectMechanic} />;
+    if (page === 'my-reviews')    return <MyReviewsPage     api={api} setToast={setToast} />;
+    if (page === 'my-breakdowns') return <MyBreakdownsPage  api={api} setToast={setToast} onNew={() => setSubPage({ type: 'post-breakdown' })} />;
   };
 
   return (
@@ -484,7 +981,6 @@ export default function UserDashboard() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=Sora:wght@600;700&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-
         body,html{background:#080810;font-family:'Tajawal',sans-serif;direction:rtl;color:#e2e8f0}
 
         @keyframes rot{to{transform:rotate(360deg)}}
@@ -494,36 +990,20 @@ export default function UserDashboard() {
         .layout{display:flex;min-height:100vh}
 
         /* ── sidebar ── */
-        .sidebar{
-          width:240px;flex-shrink:0;
-          background:rgba(255,255,255,.03);
-          border-left:1px solid rgba(255,255,255,.07);
-          display:flex;flex-direction:column;
-          padding:1.5rem 1rem;
-          position:sticky;top:0;height:100vh;
-          backdrop-filter:blur(20px);
-        }
+        .sidebar{width:240px;flex-shrink:0;background:rgba(255,255,255,.03);border-left:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;padding:1.5rem 1rem;position:sticky;top:0;height:100vh;backdrop-filter:blur(20px)}
         .sidebar-brand{display:flex;align-items:center;gap:.6rem;margin-bottom:2rem;padding:.3rem .5rem}
         .sb-icon{width:38px;height:38px;background:linear-gradient(135deg,#0ea5e9,#6366f1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
         .sb-name{font-family:'Sora',sans-serif;font-size:1.1rem;font-weight:700;color:#fff}
-
         .user-mini{background:rgba(255,255,255,.05);border-radius:14px;padding:.85rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:.7rem}
         .um-av{width:38px;height:38px;background:linear-gradient(135deg,#0ea5e9,#6366f1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
         .um-name{font-size:.88rem;font-weight:700;color:#fff;line-height:1.2}
         .um-role{font-size:.72rem;color:rgba(255,255,255,.38)}
-
-        .nav-item{
-          display:flex;align-items:center;gap:.7rem;
-          padding:.72rem .9rem;border-radius:12px;
-          font-size:.92rem;font-weight:500;color:rgba(255,255,255,.45);
-          cursor:pointer;transition:all .2s;margin-bottom:.25rem;
-          border:none;background:transparent;width:100%;text-align:right;
-        }
+        .nav-item{display:flex;align-items:center;gap:.7rem;padding:.72rem .9rem;border-radius:12px;font-size:.92rem;font-weight:500;color:rgba(255,255,255,.45);cursor:pointer;transition:all .2s;margin-bottom:.25rem;border:none;background:transparent;width:100%;text-align:right}
         .nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.8)}
         .nav-item.active{background:rgba(14,165,233,.14);color:#38bdf8;font-weight:700;border:1px solid rgba(14,165,233,.22)}
         .nav-ico{font-size:1.1rem;width:22px;text-align:center}
 
-        /* ── main content ── */
+        /* ── main ── */
         .main{flex:1;overflow-y:auto;padding:2rem}
         .page{animation:up .35s ease}
         .page-hdr{margin-bottom:1.8rem}
@@ -538,12 +1018,25 @@ export default function UserDashboard() {
         .fg{display:flex;flex-direction:column}
         .fg.full{grid-column:1/-1}
         .lbl{font-size:.8rem;font-weight:600;color:rgba(255,255,255,.4);margin-bottom:.35rem}
+        .section-label{font-size:.95rem;font-weight:700;color:rgba(255,255,255,.5);padding:.4rem 0 .6rem;border-bottom:1px solid rgba(255,255,255,.07);margin-bottom:.3rem}
         .inp-wrap{position:relative}
         .ico{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:.9rem;opacity:.4;pointer-events:none}
         .inp{width:100%;padding:.78rem 2.5rem .78rem .9rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);border-radius:11px;color:#fff;font-family:'Tajawal',sans-serif;font-size:.95rem;outline:none;transition:border-color .2s,background .2s,box-shadow .2s;text-align:right}
         .inp::placeholder{color:rgba(255,255,255,.2)}
         .inp:focus{border-color:#0ea5e9;background:rgba(14,165,233,.08);box-shadow:0 0 0 3px rgba(14,165,233,.15)}
+        .inp-select{appearance:none;-webkit-appearance:none;padding-left:2rem;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,.3)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 12px center}
+        .inp-select option{background:#1a1a2e;color:#fff}
         textarea.inp{padding-right:.9rem}
+
+        /* ── toggles ── */
+        .toggle-group{display:flex;flex-direction:column;gap:.8rem;padding:.8rem;background:rgba(255,255,255,.04);border-radius:14px;border:1px solid rgba(255,255,255,.07)}
+        .toggle-row{display:flex;align-items:center;gap:.8rem;cursor:pointer}
+        .toggle-cb{display:none}
+        .toggle-track{width:38px;height:22px;background:rgba(255,255,255,.1);border-radius:99px;position:relative;flex-shrink:0;transition:background .2s}
+        .toggle-thumb{width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:3px;right:3px;transition:transform .2s,background .2s}
+        .toggle-cb:checked + .toggle-track{background:linear-gradient(135deg,#0ea5e9,#6366f1)}
+        .toggle-cb:checked + .toggle-track .toggle-thumb{transform:translateX(-16px)}
+        .toggle-lbl{font-size:.85rem;color:rgba(255,255,255,.55)}
 
         /* ── buttons ── */
         .btn-primary{padding:.82rem 1.4rem;background:linear-gradient(135deg,#0ea5e9,#6366f1);border:none;border-radius:12px;color:#fff;font-family:'Tajawal',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:transform .2s,box-shadow .2s,opacity .2s;box-shadow:0 4px 18px rgba(14,165,233,.35);width:100%}
@@ -556,6 +1049,11 @@ export default function UserDashboard() {
         .btn-outline:hover{background:rgba(255,255,255,.12);color:#fff}
         .btn-primary-sm{background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;box-shadow:0 2px 10px rgba(14,165,233,.3)}
         .btn-primary-sm:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(14,165,233,.45)}
+        .btn-new{padding:.6rem 1.2rem;background:linear-gradient(135deg,#f59e0b,#ef4444);border:none;border-radius:11px;color:#fff;font-family:'Tajawal',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;box-shadow:0 3px 14px rgba(239,68,68,.3);transition:all .2s;white-space:nowrap}
+        .btn-new:hover{transform:translateY(-2px);box-shadow:0 5px 18px rgba(239,68,68,.4)}
+        .btn-locate{width:100%;padding:.9rem 1.4rem;background:rgba(16,185,129,.12);border:1px dashed rgba(16,185,129,.4);border-radius:12px;color:#6ee7b7;font-family:'Tajawal',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.5rem}
+        .btn-locate:hover:not(:disabled){background:rgba(16,185,129,.2);border-color:rgba(16,185,129,.6)}
+        .btn-locate:disabled{opacity:.55;cursor:not-allowed}
 
         /* ── profile ── */
         .profile-avatar-row{display:flex;align-items:center;gap:1.2rem;margin-bottom:1.8rem;padding-bottom:1.4rem;border-bottom:1px solid rgba(255,255,255,.07)}
@@ -590,9 +1088,52 @@ export default function UserDashboard() {
         .review-date{font-size:.75rem;color:rgba(255,255,255,.3)}
         .review-comment{font-size:.88rem;color:rgba(255,255,255,.65);line-height:1.6}
 
+        /* ── breakdown cards ── */
+        .bd-list{display:flex;flex-direction:column;gap:1rem}
+        .bd-card{background:rgba(255,255,255,.042);border:1px solid rgba(255,255,255,.09);border-radius:18px;padding:1.4rem;transition:border-color .2s,transform .2s}
+        .bd-card:hover{border-color:rgba(239,68,68,.25);transform:translateY(-1px)}
+        .bd-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;gap:1rem}
+        .bd-car-info{display:flex;align-items:center;gap:.85rem}
+        .bd-car-icon{width:44px;height:44px;background:linear-gradient(135deg,#f59e0b,#ef4444);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
+        .bd-car-name{font-size:1rem;font-weight:700;color:#fff;margin-bottom:.3rem}
+        .bd-year{color:rgba(255,255,255,.4);font-weight:400}
+        .bd-meta{display:flex;flex-wrap:wrap;gap:.35rem}
+        .bd-tag{font-size:.72rem;padding:.15rem .5rem;background:rgba(255,255,255,.07);border-radius:6px;color:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.08)}
+        .bd-title{font-size:1rem;font-weight:700;color:#f8fafc;margin-bottom:.4rem}
+        .bd-desc{font-size:.85rem;color:rgba(255,255,255,.5);line-height:1.6;margin-bottom:1rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+        .bd-footer{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;padding-top:.9rem;border-top:1px solid rgba(255,255,255,.06)}
+        .bd-footer-row{display:flex;flex-wrap:wrap;gap:.4rem}
+        .bd-info-chip{font-size:.72rem;padding:.2rem .55rem;border-radius:8px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.08)}
+        .bd-info-chip.warn{background:rgba(251,191,36,.1);color:#fbbf24;border-color:rgba(251,191,36,.2)}
+        .bd-info-chip.err{background:rgba(239,68,68,.1);color:#f87171;border-color:rgba(239,68,68,.2)}
+        .bd-date{font-size:.75rem;color:rgba(255,255,255,.28)}
+
+        /* ── location ── */
+        .loc-preview{display:flex;align-items:center;gap:.9rem;padding:.9rem 1.1rem;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:12px}
+        .loc-pin{font-size:1.4rem}
+
+        /* ── summary ── */
+        .summary-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:1rem 1.2rem}
+        .summary-title{font-size:.85rem;font-weight:700;color:rgba(255,255,255,.45);margin-bottom:.8rem}
+        .summary-row{display:flex;justify-content:space-between;align-items:center;padding:.3rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
+        .summary-row:last-child{border-bottom:none}
+        .sk{font-size:.8rem;color:rgba(255,255,255,.3)}
+        .sv{font-size:.85rem;font-weight:600;color:rgba(255,255,255,.7);text-align:left}
+
+        /* ── image upload ── */
+        .img-upload-area{display:block;cursor:pointer;border:1px dashed rgba(255,255,255,.18);border-radius:14px;transition:border-color .2s,background .2s;overflow:hidden}
+        .img-upload-area:hover{border-color:rgba(14,165,233,.5);background:rgba(14,165,233,.04)}
+        .img-upload-placeholder{padding:1.8rem;text-align:center}
+        .img-thumbs-row{display:flex;flex-wrap:wrap;gap:.7rem;padding:.9rem}
+        .img-thumb-wrap{position:relative;width:90px;height:90px;border-radius:10px;overflow:hidden;flex-shrink:0}
+        .img-thumb{width:100%;height:100%;object-fit:cover}
+        .img-remove{position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:50%;background:rgba(239,68,68,.85);border:none;color:#fff;font-size:.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0}
+        .img-add-more{width:90px;height:90px;border-radius:10px;border:1px dashed rgba(255,255,255,.2);display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(255,255,255,.35);cursor:pointer;transition:all .2s}
+        .img-add-more:hover{border-color:rgba(14,165,233,.4);color:#38bdf8}
+
         /* ── misc ── */
         .center-msg{text-align:center;padding:3rem;color:rgba(255,255,255,.35);font-size:.95rem;display:flex;align-items:center;justify-content:center;gap:.6rem}
-        .empty-state{text-align:center;padding:4rem 2rem;color:rgba(255,255,255,.3);font-size:.95rem}
+        .empty-state{text-align:center;padding:4rem 2rem;color:rgba(255,255,255,.3);font-size:.95rem;display:flex;flex-direction:column;align-items:center}
 
         /* ── mobile ── */
         @media(max-width:700px){
@@ -604,7 +1145,6 @@ export default function UserDashboard() {
       `}</style>
 
       <div className="layout">
-        {/* ── Sidebar ── */}
         <nav className="sidebar">
           <div className="sidebar-brand">
             <div className="sb-icon">🚗</div>
@@ -631,7 +1171,6 @@ export default function UserDashboard() {
           ))}
         </nav>
 
-        {/* ── Main ── */}
         <main className="main">
           {renderPage()}
         </main>
