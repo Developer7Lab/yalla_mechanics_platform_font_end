@@ -29,6 +29,8 @@ const useApi = (accessToken) =>
       },
     });
     const data = await res.json();
+    console.log(data);
+    
     if (!res.ok || !data.success) throw new Error(data.error || 'Request failed');
     return data;
   }, [accessToken]);
@@ -528,6 +530,8 @@ const PostBreakdownPage = ({ api, accessToken, setToast, onDone }) => {
         body: fd,
       });
       const data = await res.json();
+      console.log(data);
+      
       if (!res.ok || !data.success) throw new Error(data.error || 'Request failed');
       setToast({ type: 'success', text: 'تم نشر منشور العطل بنجاح! 🚗' });
       onDone();

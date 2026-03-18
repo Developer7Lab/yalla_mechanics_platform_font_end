@@ -1,16 +1,6 @@
 'use client'
 // ════════════════════════════════════════════════════════════════════════════
 //  MechanicDashboard.jsx  — complete mechanic panel (single file)
-//
-//  Covers ALL /api/mechanics routes:
-//  GET  /api/mechanics/profile
-//  PUT  /api/mechanics/profile
-//  GET  /api/mechanics/location
-//  POST /api/mechanics/location-requests
-//  GET  /api/mechanics/location-requests
-//  GET  /api/mechanics/notifications
-//  POST /api/mechanics/notifications/read
-//  GET  /api/mechanics/reviews
 // ════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -77,9 +67,13 @@ const Toast = ({ msg, onClose }) => {
 /* ── status badge ── */
 const StatusBadge = ({ status }) => {
   const map = {
-    pending:  { label: 'قيد الانتظار', color: '#f59e0b', bg: 'rgba(245,158,11,.14)' },
-    approved: { label: 'مقبول',        color: '#10b981', bg: 'rgba(16,185,129,.14)' },
-    rejected: { label: 'مرفوض',        color: '#ef4444', bg: 'rgba(239,68,68,.14)'  },
+    pending:    { label: 'قيد الانتظار', color: '#f59e0b', bg: 'rgba(245,158,11,.14)' },
+    approved:   { label: 'مقبول',        color: '#10b981', bg: 'rgba(16,185,129,.14)' },
+    rejected:   { label: 'مرفوض',        color: '#ef4444', bg: 'rgba(239,68,68,.14)'  },
+    accepted:   { label: 'مقبول',        color: '#10b981', bg: 'rgba(16,185,129,.14)' },
+    inProgress: { label: 'جاري العمل',   color: '#38bdf8', bg: 'rgba(56,189,248,.14)' },
+    completed:  { label: 'مكتمل',        color: '#a78bfa', bg: 'rgba(167,139,250,.14)'},
+    cancelled:  { label: 'ملغي',         color: '#6b7280', bg: 'rgba(107,114,128,.14)'},
   };
   const s = map[status] || map.pending;
   return (
@@ -94,22 +88,25 @@ const StatusBadge = ({ status }) => {
 
 /* 1 ── Overview / Stats page */
 const OverviewPage = ({ api, user, setToast }) => {
-  const [reviews,   setReviews]   = useState(null);
-  const [location,  setLocation]  = useState(null);
-  const [notifs,    setNotifs]    = useState([]);
-  const [loading,   setLoading]   = useState(true);
+  const [reviews,    setReviews]    = useState(null);
+  const [location,   setLocation]   = useState(null);
+  const [notifs,     setNotifs]     = useState([]);
+  const [breakdowns, setBreakdowns] = useState([]);
+  const [loading,    setLoading]    = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [rv, loc, nt] = await Promise.all([
+        const [rv, loc, nt, bd] = await Promise.all([
           api('/reviews'),
           api('/location'),
           api('/notifications'),
+          api('/all-breakdowns'),
         ]);
         setReviews(rv.data);
         setLocation(loc.data);
         setNotifs(nt.data);
+        setBreakdowns(bd.data || []);
       } catch (err) {
         setToast({ type: 'error', text: err.message });
       } finally { setLoading(false); }
@@ -117,7 +114,8 @@ const OverviewPage = ({ api, user, setToast }) => {
     load();
   }, []);
 
-  const unread = notifs.filter(n => !n.read).length;
+  const unread  = notifs.filter(n => !n.read).length;
+  const pending = breakdowns.filter(b => b.status === 'pending').length;
 
   if (loading) return <div className="center-msg"><Spin size={22} /><span>جاري التحميل...</span></div>;
 
@@ -128,7 +126,6 @@ const OverviewPage = ({ api, user, setToast }) => {
         <div className="page-sub">لوحة تحكم الميكانيكي</div>
       </div>
 
-      {/* stat cards */}
       <div className="stat-grid">
         <div className="stat-card">
           <div className="stat-ico" style={{ background: 'rgba(245,158,11,.12)', color: '#f59e0b' }}>⭐</div>
@@ -146,13 +143,17 @@ const OverviewPage = ({ api, user, setToast }) => {
           <div className="stat-lbl">إشعارات غير مقروءة</div>
         </div>
         <div className="stat-card">
+          <div className="stat-ico" style={{ background: 'rgba(245,158,11,.12)', color: '#fbbf24' }}>🚗</div>
+          <div className="stat-val">{pending}</div>
+          <div className="stat-lbl">أعطال بانتظار الرد</div>
+        </div>
+        <div className="stat-card">
           <div className="stat-ico" style={{ background: location ? 'rgba(16,185,129,.12)' : 'rgba(239,68,68,.12)', color: location ? '#6ee7b7' : '#fca5a5' }}>📍</div>
           <div className="stat-val">{location ? 'محدد' : 'غير محدد'}</div>
           <div className="stat-lbl">الموقع</div>
         </div>
       </div>
 
-      {/* current location card */}
       {location && (
         <div className="card-glass" style={{ marginTop: '1.2rem' }}>
           <div className="sec-title">📍 موقعي الحالي</div>
@@ -166,7 +167,6 @@ const OverviewPage = ({ api, user, setToast }) => {
         </div>
       )}
 
-      {/* latest reviews */}
       {reviews?.reviews?.length > 0 && (
         <div className="card-glass" style={{ marginTop: '1.2rem' }}>
           <div className="sec-title" style={{ marginBottom: '1rem' }}>⭐ أحدث التقييمات</div>
@@ -273,11 +273,11 @@ const ProfilePage = ({ api, user, onUpdate, setToast }) => {
   );
 };
 
-/* 3 ── Location page — current + request form + history */
+/* 3 ── Location page */
 const LocationPage = ({ api, setToast }) => {
-  const [location,  setLocation]  = useState(null);
-  const [requests,  setRequests]  = useState([]);
-  const [loading,   setLoading]   = useState(true);
+  const [location,   setLocation]   = useState(null);
+  const [requests,   setRequests]   = useState([]);
+  const [loading,    setLoading]    = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ businessName: '', address: '' });
 
@@ -322,8 +322,6 @@ const LocationPage = ({ api, setToast }) => {
         <div className="page-title">إدارة الموقع</div>
         <div className="page-sub">موقعك الحالي وطلبات التحديث</div>
       </div>
-
-      {/* current location */}
       <div className="card-glass" style={{ marginBottom: '1.2rem' }}>
         <div className="sec-title">📍 موقعي الحالي</div>
         {location ? (
@@ -344,8 +342,6 @@ const LocationPage = ({ api, setToast }) => {
           <div className="empty-inline">لم يتم تحديد موقع بعد</div>
         )}
       </div>
-
-      {/* request form */}
       <div className="card-glass" style={{ marginBottom: '1.2rem' }}>
         <div className="sec-title">📝 طلب تحديث الموقع</div>
         {hasPending ? (
@@ -376,8 +372,6 @@ const LocationPage = ({ api, setToast }) => {
           </form>
         )}
       </div>
-
-      {/* requests history */}
       <div className="card-glass">
         <div className="sec-title">🕓 سجل الطلبات ({requests.length})</div>
         {requests.length === 0 ? (
@@ -452,7 +446,6 @@ const NotificationsPage = ({ api, setToast, onRead }) => {
           </button>
         )}
       </div>
-
       {loading ? (
         <div className="center-msg"><Spin size={22} /><span>جاري التحميل...</span></div>
       ) : notifs.length === 0 ? (
@@ -495,8 +488,6 @@ const ReviewsPage = ({ api, setToast }) => {
         <div className="page-title">تقييماتي</div>
         <div className="page-sub">ما يقوله العملاء عنك</div>
       </div>
-
-      {/* summary row */}
       <div className="reviews-summary">
         <div className="rs-big">{data?.averageRating || '0.0'}</div>
         <div>
@@ -506,7 +497,6 @@ const ReviewsPage = ({ api, setToast }) => {
           </div>
         </div>
       </div>
-
       {!data?.reviews?.length ? (
         <div className="empty-state"><div style={{ fontSize: '3rem', marginBottom: '.6rem' }}>💬</div><div>لا توجد تقييمات بعد</div></div>
       ) : (
@@ -529,6 +519,260 @@ const ReviewsPage = ({ api, setToast }) => {
               <div className="rev-comment">{r.comment}</div>
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════════
+   6 ── Breakdowns page  🚗
+   ══════════════════════════════════════════════════════════ */
+const BreakdownsPage = ({ api, setToast }) => {
+  const [breakdowns, setBreakdowns] = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [filter,     setFilter]     = useState('all');   // all | pending | accepted | inProgress | completed
+  const [selected,   setSelected]   = useState(null);    // expanded card _id
+  const [acting,     setActing]     = useState(null);    // _id being actioned
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await api('/all-breakdowns');
+      setBreakdowns(res.data || []);
+    } catch (err) {
+      setToast({ type: 'error', text: err.message });
+    } finally { setLoading(false); }
+  }, [api]);
+
+  useEffect(() => { load(); }, [load]);
+
+  /* action helper — POST /api/mechanics/breakdowns/:id/action */
+  const doAction = async (id, action) => {
+    try {
+      setActing(id);
+      await api(`/breakdowns/${id}/${action}`, { method: 'POST' });
+      const actionLabels = {
+        accept:   'تم قبول الطلب ✅',
+        reject:   'تم رفض الطلب',
+        complete: 'تم تحديد الطلب كمكتمل ✅',
+      };
+      setToast({ type: 'success', text: actionLabels[action] || 'تمت العملية' });
+      await load();
+      setSelected(null);
+    } catch (err) {
+      setToast({ type: 'error', text: err.message });
+    } finally { setActing(null); }
+  };
+
+  const filters = [
+    { key: 'all',        label: 'الكل' },
+    { key: 'pending',    label: 'قيد الانتظار' },
+    { key: 'accepted',   label: 'مقبول' },
+    { key: 'inProgress', label: 'جاري العمل' },
+    { key: 'completed',  label: 'مكتمل' },
+    { key: 'cancelled',  label: 'ملغي' },
+  ];
+
+  const visible = filter === 'all'
+    ? breakdowns
+    : breakdowns.filter(b => b.status === filter);
+
+  const fuelIcon  = { بنزين: '⛽', كهربائي: '⚡', ديزل: '🛢️', هجين: '🔋' };
+  const transIcon = { أوتوماتيك: '🔄', يدوي: '🕹️' };
+
+  /* open google maps for a breakdown location */
+  const openMap = (loc) => {
+    if (!loc?.lat || !loc?.lng) return;
+    window.open(`https://www.google.com/maps?q=${loc.lat},${loc.lng}`, '_blank');
+  };
+
+  return (
+    <div className="page">
+      <div className="page-hdr" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <div className="page-title">طلبات الأعطال 🚗</div>
+          <div className="page-sub">{breakdowns.length} طلب إجمالاً — {breakdowns.filter(b => b.status === 'pending').length} بانتظار ردك</div>
+        </div>
+        <button className="btn-outline-sm" onClick={load}>🔄 تحديث</button>
+      </div>
+
+      {/* filter tabs */}
+      <div className="filter-tabs">
+        {filters.map(f => {
+          const count = f.key === 'all' ? breakdowns.length : breakdowns.filter(b => b.status === f.key).length;
+          return (
+            <button
+              key={f.key}
+              className={`filter-tab ${filter === f.key ? 'active' : ''}`}
+              onClick={() => setFilter(f.key)}
+            >
+              {f.label}
+              {count > 0 && <span className="tab-count">{count}</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      {loading ? (
+        <div className="center-msg"><Spin size={22} /><span>جاري التحميل...</span></div>
+      ) : visible.length === 0 ? (
+        <div className="empty-state">
+          <div style={{ fontSize: '3rem', marginBottom: '.6rem' }}>🚗</div>
+          <div>لا توجد طلبات في هذه الفئة</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '.9rem', marginTop: '1rem' }}>
+          {visible.map(b => {
+            const isOpen = selected === b._id;
+            const isActing = acting === b._id;
+            const car = b.carInfo || {};
+            const user = b.userId || {};
+            const loc = b.location || {};
+            const prob = b.problemDetails || {};
+
+            return (
+              <div
+                key={b._id}
+                className={`bd-card ${isOpen ? 'bd-open' : ''}`}
+                onClick={() => setSelected(isOpen ? null : b._id)}
+              >
+                {/* ── card header ── */}
+                <div className="bd-head">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem', flex: 1, minWidth: 0 }}>
+                    <div className="bd-car-ico">🚗</div>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="bd-car-name">
+                        {car.brand || '—'} {car.model || ''}
+                        <span style={{ fontWeight: 400, opacity: .5, marginRight: '.4rem', fontSize: '.82rem' }}>({car.year || '—'})</span>
+                      </div>
+                      <div className="bd-user-name">
+                        👤 {user.fullName || user.username || 'مجهول'}
+                        {user.username && <span style={{ opacity: .4, marginRight: '.3rem' }}>@{user.username}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem', flexShrink: 0 }}>
+                    <StatusBadge status={b.status} />
+                    <span style={{ fontSize: '.75rem', color: 'rgba(255,255,255,.25)', transition: 'transform .2s', transform: isOpen ? 'rotate(180deg)' : 'none' }}>▼</span>
+                  </div>
+                </div>
+
+                {/* ── quick info row (always visible) ── */}
+                <div className="bd-quick">
+                  {car.fuelType && <span className="bd-tag">{fuelIcon[car.fuelType] || '⛽'} {car.fuelType}</span>}
+                  {car.transmission && <span className="bd-tag">{transIcon[car.transmission] || '⚙️'} {car.transmission}</span>}
+                  {car.mileage && <span className="bd-tag">📏 {car.mileage.toLocaleString()} كم</span>}
+                  {prob.isRecurring && <span className="bd-tag bd-tag-warn">🔁 متكرر</span>}
+                  {prob.warningLights && <span className="bd-tag bd-tag-warn">⚠️ أضواء تحذير</span>}
+                  {prob.carRunning !== undefined && (
+                    <span className={`bd-tag ${prob.carRunning ? '' : 'bd-tag-warn'}`}>
+                      {prob.carRunning ? '✅ السيارة تعمل' : '❌ السيارة متوقفة'}
+                    </span>
+                  )}
+                </div>
+
+                {/* ── expanded details ── */}
+                {isOpen && (
+                  <div className="bd-details" onClick={e => e.stopPropagation()}>
+                    <div className="bd-section-title">📋 تفاصيل العطل</div>
+
+                    {b.title && (
+                      <div className="bd-detail-item">
+                        <span className="bd-detail-lbl">العنوان</span>
+                        <span className="bd-detail-val">{b.title}</span>
+                      </div>
+                    )}
+                    {b.description && (
+                      <div className="bd-detail-item">
+                        <span className="bd-detail-lbl">الوصف</span>
+                        <span className="bd-detail-val">{b.description}</span>
+                      </div>
+                    )}
+
+                    <div className="bd-section-title" style={{ marginTop: '.9rem' }}>🚘 معلومات السيارة</div>
+                    <div className="bd-detail-grid">
+                      <div className="bd-detail-item"><span className="bd-detail-lbl">الماركة</span><span className="bd-detail-val">{car.brand || '—'}</span></div>
+                      <div className="bd-detail-item"><span className="bd-detail-lbl">الموديل</span><span className="bd-detail-val">{car.model || '—'}</span></div>
+                      <div className="bd-detail-item"><span className="bd-detail-lbl">السنة</span><span className="bd-detail-val">{car.year || '—'}</span></div>
+                      <div className="bd-detail-item"><span className="bd-detail-lbl">الكيلومترات</span><span className="bd-detail-val">{car.mileage ? car.mileage.toLocaleString() + ' كم' : '—'}</span></div>
+                      <div className="bd-detail-item"><span className="bd-detail-lbl">الوقود</span><span className="bd-detail-val">{car.fuelType || '—'}</span></div>
+                      <div className="bd-detail-item"><span className="bd-detail-lbl">ناقل الحركة</span><span className="bd-detail-val">{car.transmission || '—'}</span></div>
+                    </div>
+
+                    <div className="bd-section-title" style={{ marginTop: '.9rem' }}>👤 معلومات العميل</div>
+                    <div className="bd-detail-grid">
+                      <div className="bd-detail-item"><span className="bd-detail-lbl">الاسم</span><span className="bd-detail-val">{user.fullName || '—'}</span></div>
+                      <div className="bd-detail-item"><span className="bd-detail-lbl">اسم المستخدم</span><span className="bd-detail-val">@{user.username || '—'}</span></div>
+                    </div>
+
+                    {(loc.lat || loc.note) && (
+                      <>
+                        <div className="bd-section-title" style={{ marginTop: '.9rem' }}>📍 الموقع</div>
+                        {loc.note && (
+                          <div className="bd-detail-item">
+                            <span className="bd-detail-lbl">ملاحظة الموقع</span>
+                            <span className="bd-detail-val">{loc.note}</span>
+                          </div>
+                        )}
+                        {loc.lat && loc.lng && (
+                          <button
+                            className="btn-map"
+                            onClick={() => openMap(loc)}
+                          >
+                            🗺️ فتح الموقع على الخريطة ({loc.lat?.toFixed(4)}, {loc.lng?.toFixed(4)})
+                          </button>
+                        )}
+                      </>
+                    )}
+
+                    <div className="bd-section-title" style={{ marginTop: '.9rem' }}>🕐 التاريخ</div>
+                    <div className="bd-detail-item">
+                      <span className="bd-detail-lbl">تاريخ الطلب</span>
+                      <span className="bd-detail-val">{new Date(b.createdAt).toLocaleString('ar')}</span>
+                    </div>
+                    {b.updatedAt && b.updatedAt !== b.createdAt && (
+                      <div className="bd-detail-item">
+                        <span className="bd-detail-lbl">آخر تحديث</span>
+                        <span className="bd-detail-val">{new Date(b.updatedAt).toLocaleString('ar')}</span>
+                      </div>
+                    )}
+
+                    {/* ── action buttons ── */}
+                    {b.status === 'pending' && (
+                      <div className="bd-actions">
+                        <button
+                          className="btn-accept"
+                          disabled={isActing}
+                          onClick={() => doAction(b._id, 'accept')}
+                        >
+                          {isActing ? <Spin size={14} /> : '✅'} قبول الطلب
+                        </button>
+                        <button
+                          className="btn-reject"
+                          disabled={isActing}
+                          onClick={() => doAction(b._id, 'reject')}
+                        >
+                          {isActing ? <Spin size={14} /> : '❌'} رفض الطلب
+                        </button>
+                      </div>
+                    )}
+                    {b.status === 'accepted' && (
+                      <div className="bd-actions">
+                        <button
+                          className="btn-accept"
+                          disabled={isActing}
+                          onClick={() => doAction(b._id, 'complete')}
+                        >
+                          {isActing ? <Spin size={14} /> : '🏁'} تحديد كمكتمل
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -568,6 +812,7 @@ export default function MechanicDashboard() {
     { key: 'overview',      icon: '📊', label: 'نظرة عامة' },
     { key: 'profile',       icon: '👤', label: 'ملفي الشخصي' },
     { key: 'location',      icon: '📍', label: 'الموقع' },
+    { key: 'breakdowns',    icon: '🚗', label: 'طلبات الأعطال' },
     { key: 'notifications', icon: '🔔', label: 'الإشعارات', badge: unread },
     { key: 'reviews',       icon: '⭐', label: 'التقييمات' },
   ];
@@ -590,6 +835,7 @@ export default function MechanicDashboard() {
     if (page === 'overview')      return <OverviewPage      api={api} user={user} setToast={setToast} />;
     if (page === 'profile')       return <ProfilePage       api={api} user={user} onUpdate={setUser} setToast={setToast} />;
     if (page === 'location')      return <LocationPage      api={api} setToast={setToast} />;
+    if (page === 'breakdowns')    return <BreakdownsPage    api={api} setToast={setToast} />;
     if (page === 'notifications') return <NotificationsPage api={api} setToast={setToast} onRead={() => setUnread(0)} />;
     if (page === 'reviews')       return <ReviewsPage       api={api} setToast={setToast} />;
   };
@@ -605,6 +851,7 @@ export default function MechanicDashboard() {
         @keyframes up{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
         @keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+        @keyframes bdSlide{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 
         .layout{display:flex;min-height:100vh}
 
@@ -725,6 +972,47 @@ export default function MechanicDashboard() {
         .rev-user{font-size:.75rem;color:rgba(255,255,255,.33)}
         .rev-date{font-size:.74rem;color:rgba(255,255,255,.28)}
         .rev-comment{font-size:.87rem;color:rgba(255,255,255,.6);line-height:1.65}
+        .mini-review{background:rgba(255,255,255,.03);border-radius:10px;padding:.7rem .9rem}
+
+        /* ════ BREAKDOWNS ════ */
+        .filter-tabs{display:flex;gap:.45rem;flex-wrap:wrap;margin-bottom:.5rem}
+        .filter-tab{padding:.38rem .85rem;border-radius:20px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:rgba(255,255,255,.45);font-family:'Tajawal',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.35rem}
+        .filter-tab:hover{background:rgba(255,255,255,.09);color:#fff}
+        .filter-tab.active{background:rgba(245,158,11,.14);border-color:rgba(245,158,11,.35);color:#fbbf24}
+        .tab-count{background:rgba(255,255,255,.12);border-radius:20px;padding:.05rem .42rem;font-size:.72rem}
+        .filter-tab.active .tab-count{background:rgba(245,158,11,.2);color:#f59e0b}
+
+        .bd-card{background:rgba(255,255,255,.036);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:1.1rem 1.2rem;cursor:pointer;transition:border-color .2s,background .2s,transform .15s}
+        .bd-card:hover{border-color:rgba(245,158,11,.2);background:rgba(255,255,255,.05);transform:translateY(-1px)}
+        .bd-card.bd-open{border-color:rgba(245,158,11,.32);background:rgba(245,158,11,.04);transform:none}
+
+        .bd-head{display:flex;align-items:center;justify-content:space-between;gap:.7rem}
+        .bd-car-ico{width:44px;height:44px;background:rgba(245,158,11,.1);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0}
+        .bd-car-name{font-size:.98rem;font-weight:700;color:#fff;margin-bottom:.18rem}
+        .bd-user-name{font-size:.8rem;color:rgba(255,255,255,.4)}
+
+        .bd-quick{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.75rem}
+        .bd-tag{font-size:.74rem;padding:.22rem .62rem;border-radius:20px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.55)}
+        .bd-tag-warn{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.25);color:#fbbf24}
+
+        .bd-details{margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,.07);animation:bdSlide .25s ease}
+        .bd-section-title{font-size:.8rem;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.8px;text-transform:uppercase;margin-bottom:.55rem}
+        .bd-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:.3rem .9rem}
+        .bd-detail-item{display:flex;justify-content:space-between;align-items:flex-start;padding:.4rem 0;border-bottom:1px solid rgba(255,255,255,.04)}
+        .bd-detail-item:last-child{border-bottom:none}
+        .bd-detail-lbl{font-size:.8rem;color:rgba(255,255,255,.35);flex-shrink:0}
+        .bd-detail-val{font-size:.85rem;color:#fff;font-weight:500;text-align:left;word-break:break-word;max-width:58%}
+
+        .btn-map{display:flex;align-items:center;gap:.5rem;margin-top:.6rem;padding:.55rem 1rem;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.25);border-radius:10px;color:#38bdf8;font-family:'Tajawal',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .2s;width:100%;justify-content:center}
+        .btn-map:hover{background:rgba(56,189,248,.2);border-color:rgba(56,189,248,.4)}
+
+        .bd-actions{display:flex;gap:.7rem;margin-top:1rem;padding-top:.9rem;border-top:1px solid rgba(255,255,255,.07)}
+        .btn-accept{flex:1;padding:.7rem;background:rgba(16,185,129,.14);border:1px solid rgba(16,185,129,.3);border-radius:11px;color:#6ee7b7;font-family:'Tajawal',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.4rem}
+        .btn-accept:hover:not(:disabled){background:rgba(16,185,129,.25);border-color:rgba(16,185,129,.5)}
+        .btn-accept:disabled{opacity:.5;cursor:not-allowed}
+        .btn-reject{flex:1;padding:.7rem;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:11px;color:#fca5a5;font-family:'Tajawal',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.4rem}
+        .btn-reject:hover:not(:disabled){background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.4)}
+        .btn-reject:disabled{opacity:.5;cursor:not-allowed}
 
         /* ── mobile ── */
         @media(max-width:680px){
@@ -732,11 +1020,12 @@ export default function MechanicDashboard() {
           .main{padding:1rem}
           .form-grid{grid-template-columns:1fr}
           .fg.full{grid-column:1}
+          .bd-detail-grid{grid-template-columns:1fr}
+          .bd-actions{flex-direction:column}
         }
       `}</style>
 
       <div className="layout">
-        {/* ── Sidebar ── */}
         <nav className="sidebar">
           <div className="sb-brand">
             <div className="sb-logo">🔧</div>
@@ -766,7 +1055,6 @@ export default function MechanicDashboard() {
           ))}
         </nav>
 
-        {/* ── Main ── */}
         <main className="main">
           {renderPage()}
         </main>

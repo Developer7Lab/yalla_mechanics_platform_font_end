@@ -78,6 +78,7 @@ export default function AuthPage() {
         body: JSON.stringify({ username: formData.username, password: formData.password }),
       });
       const { accessToken, refreshToken, user } = res.data;
+      
       setMessage({ type: 'success', text: `مرحباً ${user.fullName} 👋  جاري التوجيه...` });
       setTimeout(() => handleSuccess(accessToken, refreshToken, user), 700);
     } catch (err) {
