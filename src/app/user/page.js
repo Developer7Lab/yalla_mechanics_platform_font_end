@@ -1,23 +1,8 @@
 'use client'
-// ════════════════════════════════════════════════════════════════════════════
-//  UserDashboard.jsx  — complete user panel (single file)
-//
-//  Covers ALL /api/users routes + new breakdown posts:
-//  GET  /api/users/profile
-//  PUT  /api/users/profile
-//  GET  /api/users/mechanics
-//  GET  /api/users/mechanics/:mechanicId/reviews
-//  POST /api/users/reviews
-//  GET  /api/users/my-reviews
-//  POST /api/users/breakdowns          ← NEW
-//  GET  /api/users/my-breakdowns       ← NEW
-// ════════════════════════════════════════════════════════════════════════════
-
 import React, { useState, useEffect, useCallback } from 'react';
 
 const API_BASE = 'http://localhost:3001/api/users';
 
-/* ── tiny fetch helper ── */
 const useApi = (accessToken) =>
   useCallback(async (path, options = {}) => {
     const res = await fetch(`${API_BASE}${path}`, {
@@ -29,955 +14,493 @@ const useApi = (accessToken) =>
       },
     });
     const data = await res.json();
-    console.log(data);
-    
     if (!res.ok || !data.success) throw new Error(data.error || 'Request failed');
     return data;
   }, [accessToken]);
 
-/* ── star rating component ── */
 const Stars = ({ value, onChange, readonly = false }) => (
-  <div style={{ display: 'flex', gap: 4 }}>
-    {[1, 2, 3, 4, 5].map(n => (
-      <span
-        key={n}
-        onClick={() => !readonly && onChange && onChange(n)}
-        style={{
-          fontSize: readonly ? '1rem' : '1.4rem',
-          cursor: readonly ? 'default' : 'pointer',
-          color: n <= value ? '#f59e0b' : 'rgba(255,255,255,.15)',
-          transition: 'color .15s',
-          userSelect: 'none',
-        }}
-      >★</span>
+  <div style={{ display:'flex', gap:4 }}>
+    {[1,2,3,4,5].map(n => (
+      <span key={n} onClick={()=>!readonly&&onChange&&onChange(n)} style={{ fontSize:readonly?'1rem':'1.4rem', cursor:readonly?'default':'pointer', color:n<=value?'#f59e0b':'rgba(255,255,255,.15)', transition:'color .15s', userSelect:'none' }}>★</span>
     ))}
   </div>
 );
 
-/* ── toast ── */
 const Toast = ({ msg, onClose }) => {
   if (!msg.text) return null;
   return (
-    <div onClick={onClose} style={{
-      position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
-      padding: '0.8rem 1.2rem', borderRadius: 12, fontSize: '.88rem', fontWeight: 600,
-      cursor: 'pointer', animation: 'toastIn .3s ease',
-      background: msg.type === 'error' ? 'rgba(239,68,68,.15)' : 'rgba(16,185,129,.15)',
-      color: msg.type === 'error' ? '#fca5a5' : '#6ee7b7',
-      border: `1px solid ${msg.type === 'error' ? 'rgba(239,68,68,.3)' : 'rgba(16,185,129,.3)'}`,
-      backdropFilter: 'blur(12px)',
-    }}>
-      {msg.type === 'error' ? '❌' : '✅'} {msg.text}
+    <div onClick={onClose} style={{ position:'fixed', bottom:24, right:24, zIndex:9999, padding:'.8rem 1.2rem', borderRadius:12, fontSize:'.88rem', fontWeight:600, cursor:'pointer', animation:'toastIn .3s ease', background:msg.type==='error'?'rgba(239,68,68,.15)':'rgba(16,185,129,.15)', color:msg.type==='error'?'#fca5a5':'#6ee7b7', border:`1px solid ${msg.type==='error'?'rgba(239,68,68,.3)':'rgba(16,185,129,.3)'}`, backdropFilter:'blur(12px)' }}>
+      {msg.type==='error'?'❌':'✅'} {msg.text}
     </div>
   );
 };
 
-/* ── spinner ── */
 const Spin = () => (
-  <span style={{
-    display: 'inline-block', width: 16, height: 16,
-    border: '2px solid rgba(255,255,255,.2)', borderTopColor: '#fff',
-    borderRadius: '50%', animation: 'rot .6s linear infinite', verticalAlign: 'middle',
-  }} />
+  <span style={{ display:'inline-block', width:16, height:16, border:'2px solid rgba(255,255,255,.2)', borderTopColor:'#fff', borderRadius:'50%', animation:'rot .6s linear infinite', verticalAlign:'middle' }} />
 );
 
-/* ── status badge ── */
 const StatusBadge = ({ status }) => {
   const map = {
-    pending:    { color: '#fbbf24', bg: 'rgba(251,191,36,.12)',   icon: '⏳', label: 'قيد الانتظار' },
-    inProgress: { color: '#38bdf8', bg: 'rgba(56,189,248,.12)',   icon: '🔧', label: 'جاري العمل'   },
-    resolved:   { color: '#6ee7b7', bg: 'rgba(110,231,183,.12)',  icon: '✅', label: 'تم الحل'       },
-    cancelled:  { color: '#f87171', bg: 'rgba(248,113,113,.12)',  icon: '❌', label: 'ملغي'          },
+    pending:    { color:'#fbbf24', bg:'rgba(251,191,36,.12)',  icon:'⏳', label:'قيد الانتظار' },
+    inProgress: { color:'#38bdf8', bg:'rgba(56,189,248,.12)',  icon:'🔧', label:'جاري العمل'   },
+    resolved:   { color:'#6ee7b7', bg:'rgba(110,231,183,.12)', icon:'✅', label:'تم الحل'      },
+    cancelled:  { color:'#f87171', bg:'rgba(248,113,113,.12)', icon:'❌', label:'ملغي'          },
   };
   const s = map[status] || map.pending;
-  return (
-    <span style={{
-      fontSize: '.72rem', fontWeight: 700, padding: '.2rem .6rem', borderRadius: 20,
-      background: s.bg, color: s.color, border: `1px solid ${s.color}33`,
-    }}>
-      {s.icon} {s.label}
-    </span>
-  );
+  return <span style={{ fontSize:'.72rem', fontWeight:700, padding:'.2rem .6rem', borderRadius:20, background:s.bg, color:s.color, border:`1px solid ${s.color}33` }}>{s.icon} {s.label}</span>;
 };
 
-/* ════════════════════════ PAGES ════════════════════════ */
-
-/* 1 ── Profile page */
+/* ════════════ 1 — Profile ════════════ */
 const ProfilePage = ({ api, initialUser, onUpdate, setToast }) => {
-  const [form, setForm] = useState({
-    username: initialUser?.username || '',
-    fullName: initialUser?.fullName || '',
-    email:    initialUser?.email    || '',
-    bio:      initialUser?.profileData?.bio   || '',
-    phone:    initialUser?.profileData?.phone || '',
-  });
+  const [form, setForm] = useState({ username:initialUser?.username||'', fullName:initialUser?.fullName||'', email:initialUser?.email||'', bio:initialUser?.profileData?.bio||'', phone:initialUser?.profileData?.phone||'' });
   const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    try {
-      setLoading(true);
-      const res = await api('/profile', {
-        method: 'PUT',
-        body: JSON.stringify({
-          username:    form.username,
-          fullName:    form.fullName,
-          email:       form.email,
-          profileData: { bio: form.bio, phone: form.phone },
-        }),
-      });
-      onUpdate(res.data);
-      setToast({ type: 'success', text: 'تم تحديث الملف الشخصي بنجاح!' });
-    } catch (err) {
-      setToast({ type: 'error', text: err.message });
-    } finally { setLoading(false); }
+    try { setLoading(true); const res = await api('/profile',{ method:'PUT', body:JSON.stringify({ username:form.username, fullName:form.fullName, email:form.email, profileData:{ bio:form.bio, phone:form.phone } }) }); onUpdate(res.data); setToast({ type:'success', text:'تم تحديث الملف الشخصي!' }); }
+    catch(err){ setToast({ type:'error', text:err.message }); } finally { setLoading(false); }
   };
-
-  const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
-
+  const f = k => e => setForm(p=>({...p,[k]:e.target.value}));
   return (
     <div className="page">
-      <div className="page-hdr">
-        <div className="page-title">الملف الشخصي</div>
-        <div className="page-sub">عدّل بياناتك الشخصية</div>
-      </div>
-
+      <div className="page-hdr"><div className="page-title">الملف الشخصي</div><div className="page-sub">عدّل بياناتك الشخصية</div></div>
       <div className="card-glass">
         <div className="profile-avatar-row">
-          <div className="big-avatar">{initialUser?.role === 'mechanic' ? '🔧' : '👤'}</div>
-          <div>
-            <div className="pname">{initialUser?.fullName}</div>
-            <div className="pemail">@{initialUser?.username}</div>
-            <div className="prole-badge">{initialUser?.role}</div>
-          </div>
+          <div className="big-avatar">👤</div>
+          <div><div className="pname">{initialUser?.fullName}</div><div className="pemail">@{initialUser?.username}</div></div>
         </div>
-
         <form onSubmit={handleSubmit} className="form-grid">
-          <div className="fg">
-            <label className="lbl">الاسم الكامل</label>
-            <div className="inp-wrap"><span className="ico">👤</span>
-              <input className="inp" value={form.fullName} onChange={f('fullName')} placeholder="الاسم الكامل" /></div>
-          </div>
-          <div className="fg">
-            <label className="lbl">اسم المستخدم</label>
-            <div className="inp-wrap"><span className="ico">🪪</span>
-              <input className="inp" value={form.username} onChange={f('username')} placeholder="username" /></div>
-          </div>
-          <div className="fg full">
-            <label className="lbl">البريد الإلكتروني</label>
-            <div className="inp-wrap"><span className="ico">✉️</span>
-              <input className="inp" type="email" value={form.email} onChange={f('email')} placeholder="email@example.com" /></div>
-          </div>
-          <div className="fg">
-            <label className="lbl">رقم الهاتف</label>
-            <div className="inp-wrap"><span className="ico">📞</span>
-              <input className="inp" value={form.phone} onChange={f('phone')} placeholder="+966 5x xxx xxxx" /></div>
-          </div>
-          <div className="fg full">
-            <label className="lbl">نبذة شخصية</label>
-            <textarea className="inp" rows={3} value={form.bio} onChange={f('bio')} placeholder="اكتب نبذة عن نفسك..." style={{ resize: 'vertical', paddingTop: '.75rem' }} />
-          </div>
-          <div className="fg full">
-            <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? <><Spin /> جاري الحفظ...</> : '💾 حفظ التغييرات'}
-            </button>
-          </div>
+          <div className="fg"><label className="lbl">الاسم الكامل</label><div className="inp-wrap"><span className="ico">👤</span><input className="inp" value={form.fullName} onChange={f('fullName')} placeholder="الاسم الكامل"/></div></div>
+          <div className="fg"><label className="lbl">اسم المستخدم</label><div className="inp-wrap"><span className="ico">🪪</span><input className="inp" value={form.username} onChange={f('username')} placeholder="username"/></div></div>
+          <div className="fg full"><label className="lbl">البريد الإلكتروني</label><div className="inp-wrap"><span className="ico">✉️</span><input className="inp" type="email" value={form.email} onChange={f('email')} placeholder="email@example.com"/></div></div>
+          <div className="fg"><label className="lbl">رقم الهاتف</label><div className="inp-wrap"><span className="ico">📞</span><input className="inp" value={form.phone} onChange={f('phone')} placeholder="+962 7x xxx xxxx"/></div></div>
+          <div className="fg full"><label className="lbl">نبذة شخصية</label><textarea className="inp" rows={3} value={form.bio} onChange={f('bio')} placeholder="اكتب نبذة..." style={{ resize:'vertical', paddingTop:'.75rem' }}/></div>
+          <div className="fg full"><button type="submit" className="btn-primary" disabled={loading}>{loading?<><Spin/> جاري الحفظ...</>:'💾 حفظ التغييرات'}</button></div>
         </form>
       </div>
     </div>
   );
 };
 
-/* 2 ── Mechanics list page */
+/* ════════════ 2 — Mechanics ════════════ */
 const MechanicsPage = ({ api, setToast, onSelectMechanic }) => {
   const [mechanics, setMechanics] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [search, setSearch]       = useState('');
-
-  useEffect(() => {
-    api('/mechanics')
-      .then(r => setMechanics(r.data))
-      .catch(err => setToast({ type: 'error', text: err.message }))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const filtered = mechanics.filter(m =>
-    m.fullName.toLowerCase().includes(search.toLowerCase()) ||
-    m.username.toLowerCase().includes(search.toLowerCase())
-  );
-
+  useEffect(() => { api('/mechanics').then(r=>setMechanics(r.data)).catch(err=>setToast({type:'error',text:err.message})).finally(()=>setLoading(false)); }, []);
+  const filtered = mechanics.filter(m=>m.fullName.toLowerCase().includes(search.toLowerCase())||m.username.toLowerCase().includes(search.toLowerCase()));
   return (
     <div className="page">
-      <div className="page-hdr">
-        <div className="page-title">الميكانيكيون</div>
-        <div className="page-sub">{mechanics.length} ميكانيكي متاح</div>
-      </div>
-
-      <div className="inp-wrap" style={{ marginBottom: '1.2rem' }}>
-        <span className="ico">🔍</span>
-        <input className="inp" placeholder="ابحث باسم الميكانيكي..." value={search}
-          onChange={e => setSearch(e.target.value)} />
-      </div>
-
-      {loading ? (
-        <div className="center-msg"><Spin /> جاري التحميل...</div>
-      ) : filtered.length === 0 ? (
-        <div className="center-msg">لا توجد نتائج</div>
-      ) : (
-        <div className="mech-grid">
-          {filtered.map(m => (
-            <div key={m._id} className="mech-card">
-              <div className="mech-avatar">🔧</div>
-              <div className="mech-name">{m.fullName}</div>
-              <div className="mech-user">@{m.username}</div>
-              {m.profileData?.bio && <div className="mech-bio">{m.profileData.bio}</div>}
-              {m.profileData?.phone && <div className="mech-phone">📞 {m.profileData.phone}</div>}
-              {m.location && (
-                <div className="mech-loc">
-                  📍 {m.location.lat?.toFixed(4)}, {m.location.lng?.toFixed(4)}
-                </div>
-              )}
-              <div className="mech-actions">
-                <button className="btn-sm btn-outline" onClick={() => onSelectMechanic(m, 'reviews')}>
-                  ⭐ التقييمات
-                </button>
-                <button className="btn-sm btn-primary-sm" onClick={() => onSelectMechanic(m, 'write')}>
-                  ✍️ قيّم
-                </button>
-              </div>
+      <div className="page-hdr"><div className="page-title">الميكانيكيون</div><div className="page-sub">{mechanics.length} ميكانيكي متاح</div></div>
+      <div className="inp-wrap" style={{ marginBottom:'1.2rem' }}><span className="ico">🔍</span><input className="inp" placeholder="ابحث..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
+      {loading ? <div className="center-msg"><Spin/> جاري التحميل...</div>
+        : filtered.length===0 ? <div className="center-msg">لا توجد نتائج</div>
+        : <div className="mech-grid">{filtered.map(m=>(
+          <div key={m._id} className="mech-card">
+            <div className="mech-avatar">🔧</div>
+            <div className="mech-name">{m.fullName}</div>
+            <div className="mech-user">@{m.username}</div>
+            {m.profileData?.bio    && <div className="mech-bio">{m.profileData.bio}</div>}
+            {m.profileData?.phone  && <div className="mech-phone">📞 {m.profileData.phone}</div>}
+            <div className="mech-actions">
+              <button className="btn-sm btn-outline" onClick={()=>onSelectMechanic(m,'reviews')}>⭐ التقييمات</button>
+              <button className="btn-sm btn-primary-sm" onClick={()=>onSelectMechanic(m,'write')}>✍️ قيّم</button>
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        ))}</div>}
     </div>
   );
 };
 
-/* 3 ── Mechanic Reviews page */
+/* ════════════ 3 — Mechanic Reviews ════════════ */
 const MechanicReviewsPage = ({ api, mechanic, setToast, onBack }) => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const load = useCallback(() => {
-    setLoading(true);
-    api(`/mechanics/${mechanic._id}/reviews`)
-      .then(r => setReviews(r.data))
-      .catch(err => setToast({ type: 'error', text: err.message }))
-      .finally(() => setLoading(false));
-  }, [api, mechanic._id]);
-
-  useEffect(() => { load(); }, [load]);
-
-  const avgRating = reviews.length
-    ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
-    : null;
-
+  const load = useCallback(() => { setLoading(true); api(`/mechanics/${mechanic._id}/reviews`).then(r=>setReviews(r.data)).catch(err=>setToast({type:'error',text:err.message})).finally(()=>setLoading(false)); }, [api,mechanic._id]);
+  useEffect(()=>{ load(); },[load]);
+  const avg = reviews.length ? (reviews.reduce((s,r)=>s+r.rating,0)/reviews.length).toFixed(1) : null;
   return (
     <div className="page">
       <button className="btn-back" onClick={onBack}>← رجوع</button>
       <div className="page-hdr">
         <div className="page-title">تقييمات {mechanic.fullName}</div>
-        {avgRating && (
-          <div className="avg-row">
-            <Stars value={Math.round(avgRating)} readonly />
-            <span className="avg-num">{avgRating} / 5</span>
-            <span className="rev-count">({reviews.length} تقييم)</span>
-          </div>
-        )}
+        {avg&&<div className="avg-row"><Stars value={Math.round(avg)} readonly/><span className="avg-num">{avg}/5</span><span className="rev-count">({reviews.length} تقييم)</span></div>}
       </div>
-
-      {loading ? (
-        <div className="center-msg"><Spin /> جاري التحميل...</div>
-      ) : reviews.length === 0 ? (
-        <div className="empty-state">
-          <div style={{ fontSize: '3rem', marginBottom: '.5rem' }}>💬</div>
-          <div>لا توجد تقييمات بعد</div>
-        </div>
-      ) : (
-        <div className="reviews-list">
-          {reviews.map(r => (
-            <div key={r._id} className="review-card">
-              <div className="review-top">
-                <div className="reviewer-info">
-                  <div className="reviewer-avatar">👤</div>
-                  <div>
-                    <div className="reviewer-name">{r.userId?.fullName || 'مستخدم'}</div>
-                    <div className="reviewer-user">@{r.userId?.username}</div>
-                  </div>
-                </div>
-                <div className="review-right">
-                  <Stars value={r.rating} readonly />
-                  <div className="review-date">{new Date(r.createdAt).toLocaleDateString('ar')}</div>
-                </div>
-              </div>
-              <div className="review-comment">{r.comment}</div>
-            </div>
-          ))}
-        </div>
-      )}
+      {loading?<div className="center-msg"><Spin/> جاري التحميل...</div>:reviews.length===0?<div className="empty-state"><div style={{fontSize:'3rem',marginBottom:'.5rem'}}>💬</div><div>لا توجد تقييمات</div></div>
+        :<div className="reviews-list">{reviews.map(r=>(
+          <div key={r._id} className="review-card">
+            <div className="review-top"><div className="reviewer-info"><div className="reviewer-avatar">👤</div><div><div className="reviewer-name">{r.userId?.fullName||'مستخدم'}</div><div className="reviewer-user">@{r.userId?.username}</div></div></div><div className="review-right"><Stars value={r.rating} readonly/><div className="review-date">{new Date(r.createdAt).toLocaleDateString('ar')}</div></div></div>
+            <div className="review-comment">{r.comment}</div>
+          </div>
+        ))}</div>}
     </div>
   );
 };
 
-/* 4 ── Write Review page */
+/* ════════════ 4 — Write Review ════════════ */
 const WriteReviewPage = ({ api, mechanic, setToast, onBack }) => {
-  const [form, setForm]     = useState({ rating: 0, comment: '' });
+  const [form, setForm] = useState({ rating:0, comment:'' });
   const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    if (form.rating === 0) { setToast({ type: 'error', text: 'اختر تقييماً من 1 إلى 5.' }); return; }
+    if (form.rating===0){ setToast({type:'error',text:'اختر تقييماً من 1 إلى 5.'}); return; }
+    try { setLoading(true); await api('/reviews',{ method:'POST', body:JSON.stringify({ mechanicId:mechanic._id, rating:form.rating, comment:form.comment }) }); setToast({type:'success',text:'تم إرسال التقييم!'}); onBack(); }
+    catch(err){ setToast({type:'error',text:err.message}); } finally { setLoading(false); }
+  };
+  return (
+    <div className="page">
+      <button className="btn-back" onClick={onBack}>← رجوع</button>
+      <div className="page-hdr"><div className="page-title">تقييم {mechanic.fullName}</div><div className="page-sub">شاركنا تجربتك</div></div>
+      <div className="card-glass" style={{ maxWidth:520 }}>
+        <form onSubmit={handleSubmit} className="form-grid">
+          <div className="fg full"><label className="lbl">التقييم</label><div style={{ display:'flex', alignItems:'center', gap:'.75rem', marginTop:'.3rem' }}><Stars value={form.rating} onChange={r=>setForm(p=>({...p,rating:r}))}/>{form.rating>0&&<span style={{ color:'#f59e0b', fontWeight:700, fontSize:'1.1rem' }}>{form.rating}/5</span>}</div></div>
+          <div className="fg full"><label className="lbl">تعليقك ({form.comment.length}/1000)</label><textarea className="inp" rows={5} required maxLength={1000} value={form.comment} onChange={e=>setForm(p=>({...p,comment:e.target.value}))} placeholder="اكتب تجربتك..." style={{ resize:'vertical', paddingTop:'.75rem' }}/></div>
+          <div className="fg full"><button type="submit" className="btn-primary" disabled={loading}>{loading?<><Spin/> جاري الإرسال...</>:'🌟 إرسال التقييم'}</button></div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+/* ════════════ 5 — My Reviews ════════════ */
+const MyReviewsPage = ({ api, setToast }) => {
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(()=>{ api('/my-reviews').then(r=>setReviews(r.data)).catch(err=>setToast({type:'error',text:err.message})).finally(()=>setLoading(false)); },[]);
+  return (
+    <div className="page">
+      <div className="page-hdr"><div className="page-title">تقييماتي</div><div className="page-sub">{reviews.length} تقييم</div></div>
+      {loading?<div className="center-msg"><Spin/> جاري التحميل...</div>:reviews.length===0?<div className="empty-state"><div style={{fontSize:'3rem',marginBottom:'.5rem'}}>📋</div><div>لم تقدّم أي تقييمات بعد</div></div>
+        :<div className="reviews-list">{reviews.map(r=>(
+          <div key={r._id} className="review-card">
+            <div className="review-top"><div className="reviewer-info"><div className="mech-avatar" style={{width:42,height:42,fontSize:'1.1rem'}}>🔧</div><div><div className="reviewer-name">{r.mechanicId?.fullName||'ميكانيكي'}</div><div className="reviewer-user">@{r.mechanicId?.username}</div></div></div><div className="review-right"><Stars value={r.rating} readonly/><div className="review-date">{new Date(r.createdAt).toLocaleDateString('ar')}</div></div></div>
+            <div className="review-comment">{r.comment}</div>
+          </div>
+        ))}</div>}
+    </div>
+  );
+};
+
+/* ════════════ 6 — Post Breakdown ════════════ */
+const CAR_BRANDS = ['تويوتا','هوندا','نيسان','كيا','هيونداي','فورد','شيفروليه','بي إم دبليو','مرسيدس','أودي','فولكس واجن','مازدا','ميتسوبيشي','سوزوكي','جيب','لكزس','إنفينيتي','بورشه','لاند روفر','فولفو','أخرى'];
+const FUEL_TYPES  = ['بنزين','ديزل','كهربائي','هايبرد'];
+const TRANS_TYPES = ['أوتوماتيك','يدوي (عادي)'];
+
+const PostBreakdownPage = ({ accessToken, setToast, onDone }) => {
+  const [step, setStep]           = useState(1);
+  const [loading, setLoading]     = useState(false);
+  const [locLoading, setLocLoading] = useState(false);
+  const [images, setImages]       = useState([]);
+  const [form, setForm] = useState({ carBrand:'', carModel:'', carYear:'', fuelType:'', transmission:'', mileage:'', title:'', description:'', problemStarted:'', isRecurring:false, warningLights:false, carRunning:true, lat:'', lng:'', locationNote:'' });
+  const handleImages = e => { const files=Array.from(e.target.files); const valid=files.filter(f=>f.type.startsWith('image/')&&f.size<=5*1024*1024); if(valid.length!==files.length) setToast({type:'error',text:'بعض الصور تجاوزت 5MB'}); const combined=[...images,...valid.map(file=>({file,preview:URL.createObjectURL(file)}))].slice(0,5); setImages(combined); };
+  const removeImage = idx => setImages(prev=>{ URL.revokeObjectURL(prev[idx].preview); return prev.filter((_,i)=>i!==idx); });
+  const f  = k => e => setForm(p=>({...p,[k]:e.target.value}));
+  const fb = k => e => setForm(p=>({...p,[k]:e.target.checked}));
+  const getLocation = () => { if(!navigator.geolocation){ setToast({type:'error',text:'المتصفح لا يدعم تحديد الموقع'}); return; } setLocLoading(true); navigator.geolocation.getCurrentPosition(pos=>{ setForm(p=>({...p,lat:pos.coords.latitude.toFixed(6),lng:pos.coords.longitude.toFixed(6)})); setLocLoading(false); },()=>{ setToast({type:'error',text:'تعذّر تحديد الموقع'}); setLocLoading(false); }); };
+  const handleSubmit = async e => {
+    e.preventDefault();
+    if(!form.lat||!form.lng){ setToast({type:'error',text:'يرجى تحديد الموقع الجغرافي'}); return; }
     try {
       setLoading(true);
-      await api('/reviews', {
-        method: 'POST',
-        body: JSON.stringify({ mechanicId: mechanic._id, rating: form.rating, comment: form.comment }),
-      });
-      setToast({ type: 'success', text: 'تم إرسال التقييم بنجاح!' });
-      onBack();
-    } catch (err) {
-      setToast({ type: 'error', text: err.message });
-    } finally { setLoading(false); }
+      const fd = new FormData();
+      fd.append('title',form.title); fd.append('description',form.description);
+      fd.append('carInfo',JSON.stringify({ brand:form.carBrand, model:form.carModel, year:Number(form.carYear), fuelType:form.fuelType, transmission:form.transmission, mileage:Number(form.mileage) }));
+      fd.append('problemDetails',JSON.stringify({ startedAt:form.problemStarted, isRecurring:form.isRecurring, warningLights:form.warningLights, carRunning:form.carRunning }));
+      fd.append('location',JSON.stringify({ lat:Number(form.lat), lng:Number(form.lng), note:form.locationNote }));
+      images.forEach(img=>fd.append('photos',img.file));
+      const res = await fetch(`${API_BASE}/breakdowns`,{ method:'POST', headers:{ Authorization:`Bearer ${accessToken}` }, body:fd });
+      const data = await res.json();
+      if(!res.ok||!data.success) throw new Error(data.error||'Request failed');
+      setToast({ type:'success', text:'تم نشر منشور العطل بنجاح! 🚗' });
+      onDone();
+    } catch(err){ setToast({type:'error',text:err.message}); } finally { setLoading(false); }
+  };
+  const canNext1 = form.carBrand&&form.carModel&&form.carYear&&form.fuelType&&form.transmission;
+  const canNext2 = form.title&&form.description;
+  const StepDots = () => (
+    <div style={{ display:'flex', gap:8, marginBottom:'1.8rem', alignItems:'center' }}>
+      {[1,2,3].map(s=>(<React.Fragment key={s}><div style={{ width:step===s?32:10, height:10, borderRadius:99, background:s<=step?'linear-gradient(135deg,#0ea5e9,#6366f1)':'rgba(255,255,255,.1)', transition:'all .3s', flexShrink:0 }}/>{s<3&&<div style={{ flex:1, height:1, background:s<step?'rgba(14,165,233,.4)':'rgba(255,255,255,.08)' }}/>}</React.Fragment>))}
+      <span style={{ color:'rgba(255,255,255,.3)', fontSize:'.8rem', marginRight:4 }}>{step===1?'معلومات السيارة':step===2?'وصف المشكلة':'الموقع الجغرافي'}</span>
+    </div>
+  );
+  return (
+    <div className="page">
+      <div className="page-hdr"><div className="page-title">🚨 نشر عطل سيارة</div><div className="page-sub">أخبر الميكانيكيين بمشكلة سيارتك</div></div>
+      <div className="card-glass" style={{ maxWidth:620 }}>
+        <StepDots/>
+        <form onSubmit={step<3?e=>{e.preventDefault();setStep(s=>s+1);}:handleSubmit}>
+          {step===1&&(
+            <div className="form-grid">
+              <div className="fg"><label className="lbl">الماركة *</label><div className="inp-wrap"><span className="ico">🚗</span><select className="inp inp-select" value={form.carBrand} onChange={f('carBrand')} required><option value="">اختر الماركة...</option>{CAR_BRANDS.map(b=><option key={b} value={b}>{b}</option>)}</select></div></div>
+              <div className="fg"><label className="lbl">الموديل *</label><div className="inp-wrap"><span className="ico">🏷️</span><input className="inp" value={form.carModel} onChange={f('carModel')} placeholder="مثلاً: كامري" required/></div></div>
+              <div className="fg"><label className="lbl">سنة الصنع *</label><div className="inp-wrap"><span className="ico">📅</span><input className="inp" type="number" min="1990" max="2025" value={form.carYear} onChange={f('carYear')} placeholder="2019" required/></div></div>
+              <div className="fg"><label className="lbl">نوع الوقود *</label><div className="inp-wrap"><span className="ico">⛽</span><select className="inp inp-select" value={form.fuelType} onChange={f('fuelType')} required><option value="">اختر...</option>{FUEL_TYPES.map(t=><option key={t} value={t}>{t}</option>)}</select></div></div>
+              <div className="fg"><label className="lbl">ناقل الحركة *</label><div className="inp-wrap"><span className="ico">⚙️</span><select className="inp inp-select" value={form.transmission} onChange={f('transmission')} required><option value="">اختر...</option>{TRANS_TYPES.map(t=><option key={t} value={t}>{t}</option>)}</select></div></div>
+              <div className="fg"><label className="lbl">الكيلومترات</label><div className="inp-wrap"><span className="ico">🔢</span><input className="inp" type="number" min="0" value={form.mileage} onChange={f('mileage')} placeholder="85000"/></div></div>
+              <div className="fg full">
+                <label className="lbl">صور السيارة (اختياري — حتى 5 صور)</label>
+                <label className="img-upload-area" htmlFor="car-imgs">
+                  <input id="car-imgs" type="file" accept="image/*" multiple style={{ display:'none' }} onChange={handleImages}/>
+                  {images.length===0?<div className="img-upload-placeholder"><div style={{ fontSize:'2rem', marginBottom:'.4rem' }}>📷</div><div style={{ fontWeight:700, color:'rgba(255,255,255,.5)', fontSize:'.9rem' }}>اضغط لرفع الصور</div></div>
+                    :<div className="img-thumbs-row">{images.map((img,i)=><div key={i} className="img-thumb-wrap"><img src={img.preview} className="img-thumb" alt=""/><button type="button" className="img-remove" onClick={e=>{e.preventDefault();removeImage(i);}}>✕</button></div>)}{images.length<5&&<div className="img-add-more"><div style={{ fontSize:'1.4rem' }}>+</div></div>}</div>}
+                </label>
+              </div>
+              <div className="fg full"><button type="submit" className="btn-primary" disabled={!canNext1}>التالي: وصف المشكلة ←</button></div>
+            </div>
+          )}
+          {step===2&&(
+            <div className="form-grid">
+              <div className="fg full"><label className="lbl">عنوان المشكلة *</label><div className="inp-wrap"><span className="ico">📝</span><input className="inp" value={form.title} onChange={f('title')} placeholder="مثلاً: صوت غريب من المحرك" required maxLength={120}/></div></div>
+              <div className="fg full"><label className="lbl">وصف المشكلة * ({form.description.length}/1000)</label><textarea className="inp" rows={5} required maxLength={1000} value={form.description} onChange={f('description')} placeholder="اشرح المشكلة بالتفصيل..." style={{ resize:'vertical', paddingTop:'.75rem' }}/></div>
+              <div className="fg"><label className="lbl">متى بدأت المشكلة؟</label><div className="inp-wrap"><span className="ico">📅</span><input className="inp" type="date" value={form.problemStarted} onChange={f('problemStarted')}/></div></div>
+              <div className="fg">
+                <div className="toggle-group">
+                  <label className="toggle-row"><input type="checkbox" className="toggle-cb" checked={form.isRecurring} onChange={fb('isRecurring')}/><div className="toggle-track"><div className="toggle-thumb"/></div><span className="toggle-lbl">المشكلة تتكرر</span></label>
+                  <label className="toggle-row"><input type="checkbox" className="toggle-cb" checked={form.warningLights} onChange={fb('warningLights')}/><div className="toggle-track"><div className="toggle-thumb"/></div><span className="toggle-lbl">لمبة تحذير ظهرت</span></label>
+                  <label className="toggle-row"><input type="checkbox" className="toggle-cb" checked={form.carRunning} onChange={fb('carRunning')}/><div className="toggle-track"><div className="toggle-thumb"/></div><span className="toggle-lbl">السيارة لا تزال تعمل</span></label>
+                </div>
+              </div>
+              <div className="fg full" style={{ display:'flex', gap:'.75rem' }}>
+                <button type="button" className="btn-back" style={{ flex:1, justifyContent:'center' }} onClick={()=>setStep(1)}>→ رجوع</button>
+                <button type="submit" className="btn-primary" style={{ flex:2 }} disabled={!canNext2}>التالي: الموقع ←</button>
+              </div>
+            </div>
+          )}
+          {step===3&&(
+            <div className="form-grid">
+              <div className="fg full"><button type="button" className="btn-locate" onClick={getLocation} disabled={locLoading}>{locLoading?<><Spin/> جاري تحديد الموقع...</>:'📡 تحديد موقعي الحالي تلقائياً'}</button></div>
+              {form.lat&&form.lng&&<div className="fg full"><div className="loc-preview"><div className="loc-pin">📍</div><div><div style={{ color:'#6ee7b7', fontWeight:700, fontSize:'.88rem' }}>تم تحديد الموقع</div><div style={{ color:'rgba(255,255,255,.35)', fontSize:'.78rem', marginTop:'.15rem' }}>{form.lat}, {form.lng}</div></div></div></div>}
+              <div className="fg"><label className="lbl">خط العرض</label><div className="inp-wrap"><span className="ico">↕️</span><input className="inp" type="number" step="any" value={form.lat} onChange={f('lat')} placeholder="31.9539"/></div></div>
+              <div className="fg"><label className="lbl">خط الطول</label><div className="inp-wrap"><span className="ico">↔️</span><input className="inp" type="number" step="any" value={form.lng} onChange={f('lng')} placeholder="35.9106"/></div></div>
+              <div className="fg full"><label className="lbl">ملاحظة الموقع</label><div className="inp-wrap"><span className="ico">🗺️</span><input className="inp" value={form.locationNote} onChange={f('locationNote')} placeholder="أمام مجمع..."/></div></div>
+              <div className="fg full">
+                <div className="summary-card">
+                  <div className="summary-title">📋 ملخص المنشور</div>
+                  <div className="summary-row"><span className="sk">السيارة:</span><span className="sv">{form.carBrand} {form.carModel} {form.carYear}</span></div>
+                  <div className="summary-row"><span className="sk">الوقود:</span><span className="sv">{form.fuelType}</span></div>
+                  <div className="summary-row"><span className="sk">المشكلة:</span><span className="sv">{form.title||'—'}</span></div>
+                  <div className="summary-row"><span className="sk">الموقع:</span><span className="sv">{form.lat&&form.lng?`${form.lat}, ${form.lng}`:'لم يُحدَّد'}</span></div>
+                </div>
+              </div>
+              <div className="fg full" style={{ display:'flex', gap:'.75rem' }}>
+                <button type="button" className="btn-back" style={{ flex:1, justifyContent:'center' }} onClick={()=>setStep(2)}>→ رجوع</button>
+                <button type="submit" className="btn-primary" style={{ flex:2 }} disabled={loading}>{loading?<><Spin/> جاري النشر...</>:'🚨 نشر منشور العطل'}</button>
+              </div>
+            </div>
+          )}
+        </form>
+      </div>
+    </div>
+  );
+};
+
+/* ════════════ 7 — My Breakdowns (مع زر عرض الاقتراحات) ════════════ */
+const MyBreakdownsPage = ({ api, setToast, onNew, onViewProposals }) => {
+  const [breakdowns, setBreakdowns] = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const load = useCallback(()=>{ setLoading(true); api('/my-breakdowns').then(r=>setBreakdowns(r.data)).catch(err=>setToast({type:'error',text:err.message})).finally(()=>setLoading(false)); },[api]);
+  useEffect(()=>{ load(); },[load]);
+
+  return (
+    <div className="page">
+      <div className="page-hdr" style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:'1rem' }}>
+        <div><div className="page-title">منشوراتي 🚗</div><div className="page-sub">{breakdowns.length} منشور</div></div>
+        <div style={{ display:'flex', gap:'.7rem' }}>
+          <button className="btn-outline-sm" onClick={load}>🔄</button>
+          <button className="btn-new" onClick={onNew}>+ نشر عطل جديد</button>
+        </div>
+      </div>
+      {loading ? <div className="center-msg"><Spin/> جاري التحميل...</div>
+        : breakdowns.length===0 ? (
+          <div className="empty-state">
+            <div style={{ fontSize:'3.5rem', marginBottom:'.7rem' }}>🚗</div>
+            <div style={{ marginBottom:'1rem' }}>لم تنشر أي منشور بعد</div>
+            <button className="btn-primary" style={{ maxWidth:220 }} onClick={onNew}>🚨 نشر أول منشور</button>
+          </div>
+        ) : (
+          <div className="bd-list">
+            {breakdowns.map(b=>{
+              const hasProposals = (b.proposalCount||0) > 0;
+              return (
+                <div key={b._id} className="bd-card">
+                  <div className="bd-card-top">
+                    <div className="bd-car-info">
+                      <div className="bd-car-icon">🚗</div>
+                      <div>
+                        <div className="bd-car-name">{b.carInfo?.brand} {b.carInfo?.model}{b.carInfo?.year&&<span className="bd-year"> — {b.carInfo.year}</span>}</div>
+                        <div className="bd-meta">
+                          {b.carInfo?.fuelType     && <span className="bd-tag">{b.carInfo.fuelType}</span>}
+                          {b.carInfo?.transmission && <span className="bd-tag">{b.carInfo.transmission}</span>}
+                          {b.carInfo?.mileage      && <span className="bd-tag">🔢 {b.carInfo.mileage.toLocaleString()} كم</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'.5rem' }}>
+                      <StatusBadge status={b.status||'pending'}/>
+                      {b.status==='pending'&&(
+                        <span style={{ fontSize:'.72rem', padding:'.18rem .55rem', borderRadius:20, background:hasProposals?'rgba(56,189,248,.12)':'rgba(255,255,255,.06)', color:hasProposals?'#38bdf8':'rgba(255,255,255,.3)', border:`1px solid ${hasProposals?'rgba(56,189,248,.3)':'rgba(255,255,255,.1)'}` }}>
+                          💬 {b.proposalCount||0} اقتراح
+                        </span>
+                      )}
+                      {b.assignedMechanic&&<span style={{ fontSize:'.72rem', padding:'.18rem .55rem', borderRadius:20, background:'rgba(16,185,129,.1)', color:'#6ee7b7', border:'1px solid rgba(16,185,129,.25)' }}>🔧 {b.assignedMechanic.fullName}</span>}
+                    </div>
+                  </div>
+                  <div className="bd-title">{b.title}</div>
+                  <div className="bd-desc">{b.description}</div>
+                  <div className="bd-footer">
+                    <div className="bd-footer-row">
+                      {b.location?.lat && <span className="bd-info-chip">📍 {Number(b.location.lat).toFixed(4)}, {Number(b.location.lng).toFixed(4)}</span>}
+                      {b.problemDetails?.warningLights   && <span className="bd-info-chip warn">⚠️ لمبة تحذير</span>}
+                      {b.problemDetails?.isRecurring     && <span className="bd-info-chip">🔁 متكررة</span>}
+                      {b.problemDetails?.carRunning===false && <span className="bd-info-chip err">🔴 واقفة</span>}
+                    </div>
+                    <div style={{ display:'flex', alignItems:'center', gap:'.7rem' }}>
+                      <span className="bd-date">{new Date(b.createdAt).toLocaleDateString('ar')}</span>
+                      {b.status==='pending'&&hasProposals&&(
+                        <button className="btn-view-proposals" onClick={()=>onViewProposals(b)}>
+                          👀 اقتراحات ({b.proposalCount})
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+    </div>
+  );
+};
+
+/* ════════════ 8 — Breakdown Proposals (قبول / رفض) ════════════ */
+const BreakdownProposalsPage = ({ api, breakdown, setToast, onBack, onAccepted }) => {
+  const [proposals, setProposals] = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [acting, setActing]       = useState(null);
+
+  const load = useCallback(()=>{ setLoading(true); api(`/breakdowns/${breakdown._id}/proposals`).then(r=>setProposals(r.data)).catch(err=>setToast({type:'error',text:err.message})).finally(()=>setLoading(false)); },[api,breakdown._id]);
+  useEffect(()=>{ load(); },[load]);
+
+  const accept = async id => {
+    try { setActing(id); await api(`/breakdowns/${breakdown._id}/proposals/${id}/accept`,{method:'POST'}); setToast({type:'success',text:'🎉 تم قبول الاقتراح! سيبدأ الميكانيكي بالعمل.'}); onAccepted(); }
+    catch(err){ setToast({type:'error',text:err.message}); setActing(null); }
+  };
+  const reject = async id => {
+    try { setActing(`r-${id}`); await api(`/breakdowns/${breakdown._id}/proposals/${id}/reject`,{method:'POST'}); setToast({type:'success',text:'تم رفض الاقتراح.'}); await load(); }
+    catch(err){ setToast({type:'error',text:err.message}); } finally { setActing(null); }
+  };
+  const complete = async () => {
+    try { setActing('done'); await api(`/breakdowns/${breakdown._id}/complete`,{method:'POST'}); setToast({type:'success',text:'✅ تم إغلاق الطلب كمكتمل'}); onAccepted(); }
+    catch(err){ setToast({type:'error',text:err.message}); setActing(null); }
   };
 
   return (
     <div className="page">
       <button className="btn-back" onClick={onBack}>← رجوع</button>
       <div className="page-hdr">
-        <div className="page-title">تقييم {mechanic.fullName}</div>
-        <div className="page-sub">شاركنا تجربتك مع هذا الميكانيكي</div>
-      </div>
-
-      <div className="card-glass" style={{ maxWidth: 520 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-          <div className="mech-avatar" style={{ fontSize: '1.5rem', width: 52, height: 52 }}>🔧</div>
-          <div>
-            <div className="mech-name">{mechanic.fullName}</div>
-            <div className="mech-user">@{mechanic.username}</div>
+        <div className="page-title">اقتراحات الميكانيكيين 💬</div>
+        <div style={{ display:'flex', alignItems:'center', gap:'.8rem', marginTop:'.5rem', flexWrap:'wrap' }}>
+          <div style={{ background:'rgba(255,255,255,.06)', borderRadius:10, padding:'.4rem .8rem', fontSize:'.85rem', color:'rgba(255,255,255,.55)' }}>
+            🚗 {breakdown.carInfo?.brand} {breakdown.carInfo?.model} — {breakdown.title}
           </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="form-grid">
-          <div className="fg full">
-            <label className="lbl">التقييم</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem', marginTop: '.3rem' }}>
-              <Stars value={form.rating} onChange={r => setForm(p => ({ ...p, rating: r }))} />
-              {form.rating > 0 && <span style={{ color: '#f59e0b', fontWeight: 700, fontSize: '1.1rem' }}>{form.rating}/5</span>}
-            </div>
-          </div>
-
-          <div className="fg full">
-            <label className="lbl">تعليقك ({form.comment.length}/1000)</label>
-            <textarea className="inp" rows={5} required maxLength={1000}
-              value={form.comment} onChange={e => setForm(p => ({ ...p, comment: e.target.value }))}
-              placeholder="اكتب تجربتك مع هذا الميكانيكي..."
-              style={{ resize: 'vertical', paddingTop: '.75rem' }} />
-          </div>
-
-          <div className="fg full">
-            <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? <><Spin /> جاري الإرسال...</> : '🌟 إرسال التقييم'}
+          {breakdown.status==='inProgress'&&(
+            <button className="btn-complete" disabled={acting==='done'} onClick={complete}>
+              {acting==='done'?<><Spin size={14}/> جاري...</>:'🏁 أعلن اكتمال الإصلاح'}
             </button>
+          )}
+        </div>
+      </div>
+
+      {loading ? <div className="center-msg"><Spin/> جاري التحميل...</div>
+        : proposals.length===0 ? (
+          <div className="empty-state">
+            <div style={{ fontSize:'3rem', marginBottom:'.6rem' }}>💬</div>
+            <div>لا توجد اقتراحات بعد</div>
+            <div style={{ fontSize:'.82rem', marginTop:'.5rem', color:'rgba(255,255,255,.25)' }}>انتظر حتى يتقدم الميكانيكيون</div>
           </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-/* 5 ── My Reviews page */
-const MyReviewsPage = ({ api, setToast }) => {
-  const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    api('/my-reviews')
-      .then(r => setReviews(r.data))
-      .catch(err => setToast({ type: 'error', text: err.message }))
-      .finally(() => setLoading(false));
-  }, []);
-
-  return (
-    <div className="page">
-      <div className="page-hdr">
-        <div className="page-title">تقييماتي</div>
-        <div className="page-sub">{reviews.length} تقييم قدّمته</div>
-      </div>
-
-      {loading ? (
-        <div className="center-msg"><Spin /> جاري التحميل...</div>
-      ) : reviews.length === 0 ? (
-        <div className="empty-state">
-          <div style={{ fontSize: '3rem', marginBottom: '.5rem' }}>📋</div>
-          <div>لم تقدّم أي تقييمات بعد</div>
-        </div>
-      ) : (
-        <div className="reviews-list">
-          {reviews.map(r => (
-            <div key={r._id} className="review-card">
-              <div className="review-top">
-                <div className="reviewer-info">
-                  <div className="mech-avatar" style={{ width: 42, height: 42, fontSize: '1.1rem' }}>🔧</div>
-                  <div>
-                    <div className="reviewer-name">{r.mechanicId?.fullName || 'ميكانيكي'}</div>
-                    <div className="reviewer-user">@{r.mechanicId?.username}</div>
-                  </div>
-                </div>
-                <div className="review-right">
-                  <Stars value={r.rating} readonly />
-                  <div className="review-date">{new Date(r.createdAt).toLocaleDateString('ar')}</div>
-                </div>
-              </div>
-              <div className="review-comment">{r.comment}</div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-/* ══════════════════════════════════════════════════════
-   6 ── Post Breakdown page  (NEW)
-   POST /api/users/breakdowns
-   ══════════════════════════════════════════════════════ */
-const CAR_BRANDS = [
-  'تويوتا','هوندا','نيسان','كيا','هيونداي','فورد','شيفروليه','بي إم دبليو',
-  'مرسيدس','أودي','فولكس واجن','مازدا','ميتسوبيشي','سوزوكي','جيب','لكزس','إنفينيتي',
-  'بورشه','لاند روفر','فولفو','أخرى',
-];
-const FUEL_TYPES  = ['بنزين','ديزل','كهربائي','هايبرد'];
-const TRANS_TYPES = ['أوتوماتيك','يدوي (عادي)'];
-
-const PostBreakdownPage = ({ api, accessToken, setToast, onDone }) => {
-  const [step, setStep]         = useState(1);
-  const [loading, setLoading]   = useState(false);
-  const [locLoading, setLocLoading] = useState(false);
-  const [images, setImages]     = useState([]); // { file, preview }
-
-  const [form, setForm] = useState({
-    // step 1 — car
-    carBrand:        '',
-    carModel:        '',
-    carYear:         '',
-    fuelType:        '',
-    transmission:    '',
-    mileage:         '',
-    // step 2 — problem
-    title:           '',
-    description:     '',
-    problemStarted:  '',
-    isRecurring:     false,
-    warningLights:   false,
-    carRunning:      true,
-    // step 3 — location
-    lat:             '',
-    lng:             '',
-    locationNote:    '',
-  });
-
-  /* image picker */
-  const handleImages = (e) => {
-    const files = Array.from(e.target.files);
-    const valid = files.filter(f => f.type.startsWith('image/') && f.size <= 5 * 1024 * 1024);
-    if (valid.length !== files.length) setToast({ type: 'error', text: 'بعض الصور تجاوزت 5MB أو غير مدعومة' });
-    const combined = [...images, ...valid.map(file => ({ file, preview: URL.createObjectURL(file) }))].slice(0, 5);
-    setImages(combined);
-  };
-  const removeImage = (idx) => setImages(prev => { URL.revokeObjectURL(prev[idx].preview); return prev.filter((_,i) => i !== idx); });
-
-  const f  = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
-  const fb = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.checked }));
-
-  /* get GPS */
-  const getLocation = () => {
-    if (!navigator.geolocation) { setToast({ type: 'error', text: 'المتصفح لا يدعم تحديد الموقع' }); return; }
-    setLocLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        setForm(p => ({ ...p, lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6) }));
-        setLocLoading(false);
-      },
-      () => { setToast({ type: 'error', text: 'تعذّر تحديد الموقع' }); setLocLoading(false); }
-    );
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.lat || !form.lng) { setToast({ type: 'error', text: 'يرجى تحديد الموقع الجغرافي' }); return; }
-    try {
-      setLoading(true);
-      // Build FormData to support image uploads
-      const fd = new FormData();
-      fd.append('title',       form.title);
-      fd.append('description', form.description);
-      fd.append('carInfo',     JSON.stringify({
-        brand: form.carBrand, model: form.carModel, year: Number(form.carYear),
-        fuelType: form.fuelType, transmission: form.transmission, mileage: Number(form.mileage),
-      }));
-      fd.append('problemDetails', JSON.stringify({
-        startedAt: form.problemStarted, isRecurring: form.isRecurring,
-        warningLights: form.warningLights, carRunning: form.carRunning,
-      }));
-      fd.append('location', JSON.stringify({
-        lat: Number(form.lat), lng: Number(form.lng), note: form.locationNote,
-      }));
-      images.forEach(img => fd.append('photos', img.file));
-
-      const res = await fetch(`${API_BASE}/breakdowns`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${accessToken}` },
-        body: fd,
-      });
-      const data = await res.json();
-      console.log(data);
-      
-      if (!res.ok || !data.success) throw new Error(data.error || 'Request failed');
-      setToast({ type: 'success', text: 'تم نشر منشور العطل بنجاح! 🚗' });
-      onDone();
-    } catch (err) {
-      setToast({ type: 'error', text: err.message });
-    } finally { setLoading(false); }
-  };
-
-  /* step validation */
-  const canNext1 = form.carBrand && form.carModel && form.carYear && form.fuelType && form.transmission;
-  const canNext2 = form.title && form.description;
-
-  const StepDots = () => (
-    <div style={{ display: 'flex', gap: 8, marginBottom: '1.8rem', alignItems: 'center' }}>
-      {[1,2,3].map(s => (
-        <React.Fragment key={s}>
-          <div style={{
-            width: step === s ? 32 : 10, height: 10,
-            borderRadius: 99,
-            background: s <= step ? 'linear-gradient(135deg,#0ea5e9,#6366f1)' : 'rgba(255,255,255,.1)',
-            transition: 'all .3s',
-            flexShrink: 0,
-          }} />
-          {s < 3 && <div style={{ flex:1, height:1, background: s < step ? 'rgba(14,165,233,.4)' : 'rgba(255,255,255,.08)' }} />}
-        </React.Fragment>
-      ))}
-      <span style={{ color:'rgba(255,255,255,.3)', fontSize:'.8rem', marginRight: 4 }}>
-        {step === 1 ? 'معلومات السيارة' : step === 2 ? 'وصف المشكلة' : 'الموقع الجغرافي'}
-      </span>
-    </div>
-  );
-
-  return (
-    <div className="page">
-      <div className="page-hdr">
-        <div className="page-title">🚨 نشر عطل سيارة</div>
-        <div className="page-sub">أخبر الميكانيكيين بمشكلة سيارتك واحصل على مساعدة سريعة</div>
-      </div>
-
-      <div className="card-glass" style={{ maxWidth: 620 }}>
-        <StepDots />
-
-        <form onSubmit={step < 3 ? (e) => { e.preventDefault(); setStep(s => s + 1); } : handleSubmit}>
-
-          {/* ── STEP 1: Car Info ── */}
-          {step === 1 && (
-            <div className="form-grid">
-              <div className="fg full">
-                <div className="section-label">🚗 معلومات السيارة</div>
-              </div>
-
-              <div className="fg">
-                <label className="lbl">نوع السيارة (الماركة) *</label>
-                <div className="inp-wrap">
-                  <span className="ico">🚗</span>
-                  <select className="inp inp-select" value={form.carBrand} onChange={f('carBrand')} required>
-                    <option value="">اختر الماركة...</option>
-                    {CAR_BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="fg">
-                <label className="lbl">الموديل *</label>
-                <div className="inp-wrap">
-                  <span className="ico">🏷️</span>
-                  <input className="inp" value={form.carModel} onChange={f('carModel')}
-                    placeholder="مثلاً: كامري، سيفيك..." required />
-                </div>
-              </div>
-
-              <div className="fg">
-                <label className="lbl">سنة الصنع *</label>
-                <div className="inp-wrap">
-                  <span className="ico">📅</span>
-                  <input className="inp" type="number" min="1990" max="2025"
-                    value={form.carYear} onChange={f('carYear')}
-                    placeholder="مثلاً: 2019" required />
-                </div>
-              </div>
-
-              <div className="fg">
-                <label className="lbl">نوع الوقود *</label>
-                <div className="inp-wrap">
-                  <span className="ico">⛽</span>
-                  <select className="inp inp-select" value={form.fuelType} onChange={f('fuelType')} required>
-                    <option value="">اختر نوع الوقود...</option>
-                    {FUEL_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="fg">
-                <label className="lbl">ناقل الحركة *</label>
-                <div className="inp-wrap">
-                  <span className="ico">⚙️</span>
-                  <select className="inp inp-select" value={form.transmission} onChange={f('transmission')} required>
-                    <option value="">اختر نوع الناقل...</option>
-                    {TRANS_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="fg">
-                <label className="lbl">عداد الكيلومترات (كم)</label>
-                <div className="inp-wrap">
-                  <span className="ico">🔢</span>
-                  <input className="inp" type="number" min="0"
-                    value={form.mileage} onChange={f('mileage')}
-                    placeholder="مثلاً: 85000" />
-                </div>
-              </div>
-
-              {/* Image upload */}
-              <div className="fg full">
-                <label className="lbl">صور السيارة / العطل (اختياري — حتى 5 صور، max 5MB لكل صورة)</label>
-                <label className="img-upload-area" htmlFor="car-imgs">
-                  <input id="car-imgs" type="file" accept="image/*" multiple style={{ display:'none' }} onChange={handleImages} />
-                  {images.length === 0 ? (
-                    <div className="img-upload-placeholder">
-                      <div style={{ fontSize:'2rem', marginBottom:'.4rem' }}>📷</div>
-                      <div style={{ fontWeight:700, color:'rgba(255,255,255,.5)', fontSize:'.9rem' }}>اضغط لرفع الصور</div>
-                      <div style={{ fontSize:'.75rem', color:'rgba(255,255,255,.25)', marginTop:'.2rem' }}>PNG، JPG، WEBP</div>
-                    </div>
-                  ) : (
-                    <div className="img-thumbs-row">
-                      {images.map((img, i) => (
-                        <div key={i} className="img-thumb-wrap">
-                          <img src={img.preview} className="img-thumb" alt={`car-${i}`} />
-                          <button type="button" className="img-remove" onClick={e => { e.preventDefault(); removeImage(i); }}>✕</button>
-                        </div>
-                      ))}
-                      {images.length < 5 && (
-                        <div className="img-add-more">
-                          <div style={{ fontSize:'1.4rem' }}>+</div>
-                          <div style={{ fontSize:'.72rem', color:'rgba(255,255,255,.3)' }}>إضافة</div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </label>
-              </div>
-
-              <div className="fg full">
-                <button type="submit" className="btn-primary" disabled={!canNext1}>
-                  التالي: وصف المشكلة ←
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ── STEP 2: Problem Description ── */}
-          {step === 2 && (
-            <div className="form-grid">
-              <div className="fg full">
-                <div className="section-label">🔍 وصف المشكلة</div>
-              </div>
-
-              <div className="fg full">
-                <label className="lbl">عنوان المشكلة *</label>
-                <div className="inp-wrap">
-                  <span className="ico">📝</span>
-                  <input className="inp" value={form.title} onChange={f('title')}
-                    placeholder="مثلاً: صوت غريب من المحرك عند التشغيل" required maxLength={120} />
-                </div>
-              </div>
-
-              <div className="fg full">
-                <label className="lbl">وصف المشكلة بالتفصيل * ({form.description.length}/1000)</label>
-                <textarea className="inp" rows={5} required maxLength={1000}
-                  value={form.description} onChange={f('description')}
-                  placeholder="اشرح المشكلة بشكل مفصّل: متى تحدث؟ كيف تبدأ؟ هل هناك أصوات أو روائح غريبة؟..."
-                  style={{ resize: 'vertical', paddingTop: '.75rem' }} />
-              </div>
-
-              <div className="fg">
-                <label className="lbl">متى بدأت المشكلة؟</label>
-                <div className="inp-wrap">
-                  <span className="ico">📅</span>
-                  <input className="inp" type="date" value={form.problemStarted} onChange={f('problemStarted')} />
-                </div>
-              </div>
-
-              <div className="fg" style={{ justifyContent: 'flex-end' }}>
-                <div className="toggle-group">
-                  <label className="toggle-row">
-                    <input type="checkbox" className="toggle-cb" checked={form.isRecurring} onChange={fb('isRecurring')} />
-                    <div className="toggle-track"><div className="toggle-thumb" /></div>
-                    <span className="toggle-lbl">المشكلة تتكرر أحياناً</span>
-                  </label>
-                  <label className="toggle-row">
-                    <input type="checkbox" className="toggle-cb" checked={form.warningLights} onChange={fb('warningLights')} />
-                    <div className="toggle-track"><div className="toggle-thumb" /></div>
-                    <span className="toggle-lbl">ظهرت لمبة تحذير في الطبلون</span>
-                  </label>
-                  <label className="toggle-row">
-                    <input type="checkbox" className="toggle-cb" checked={form.carRunning} onChange={fb('carRunning')} />
-                    <div className="toggle-track"><div className="toggle-thumb" /></div>
-                    <span className="toggle-lbl">السيارة لا تزال تعمل</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="fg full" style={{ display: 'flex', gap: '.75rem' }}>
-                <button type="button" className="btn-back" style={{ flex:1, textAlign:'center', justifyContent:'center' }}
-                  onClick={() => setStep(1)}>
-                  → رجوع
-                </button>
-                <button type="submit" className="btn-primary" style={{ flex:2 }} disabled={!canNext2}>
-                  التالي: الموقع الجغرافي ←
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ── STEP 3: Location ── */}
-          {step === 3 && (
-            <div className="form-grid">
-              <div className="fg full">
-                <div className="section-label">📍 الموقع الجغرافي</div>
-              </div>
-
-              <div className="fg full">
-                <button type="button" className="btn-locate" onClick={getLocation} disabled={locLoading}>
-                  {locLoading ? <><Spin /> جاري تحديد الموقع...</> : '📡 تحديد موقعي الحالي تلقائياً'}
-                </button>
-              </div>
-
-              {form.lat && form.lng && (
-                <div className="fg full">
-                  <div className="loc-preview">
-                    <div className="loc-pin">📍</div>
-                    <div>
-                      <div style={{ color: '#6ee7b7', fontWeight: 700, fontSize: '.88rem' }}>تم تحديد الموقع بنجاح</div>
-                      <div style={{ color: 'rgba(255,255,255,.35)', fontSize: '.78rem', marginTop: '.15rem' }}>
-                        خط العرض: {form.lat} | خط الطول: {form.lng}
+        ) : (
+          <div style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
+            {proposals.map(p=>{
+              const mech = p.mechanicId||{};
+              const isAcc = p.status==='accepted';
+              return (
+                <div key={p._id} className={`proposal-card ${isAcc?'proposal-accepted':''}`}>
+                  {isAcc&&<div className="accepted-banner">🎉 هذا الاقتراح مقبول — الميكانيكي يعمل على طلبك الآن</div>}
+                  <div className="proposal-head">
+                    <div style={{ display:'flex', alignItems:'center', gap:'.85rem', flex:1 }}>
+                      <div className="mech-av">🔧</div>
+                      <div>
+                        <div className="mech-pname">{mech.fullName||'ميكانيكي'}</div>
+                        <div className="mech-pusername">@{mech.username}</div>
+                        {mech.profileData?.phone&&<div className="mech-pphone">📞 {mech.profileData.phone}</div>}
+                        {mech.profileData?.bio&&<div style={{ fontSize:'.78rem', color:'rgba(255,255,255,.35)', marginTop:'.2rem' }}>{mech.profileData.bio}</div>}
                       </div>
                     </div>
+                    <div className="proposal-price"><div className="price-val">{p.price}</div><div className="price-cur">{p.currency}</div></div>
                   </div>
-                </div>
-              )}
-
-              <div className="fg">
-                <label className="lbl">خط العرض (Latitude)</label>
-                <div className="inp-wrap">
-                  <span className="ico">↕️</span>
-                  <input className="inp" type="number" step="any"
-                    value={form.lat} onChange={f('lat')}
-                    placeholder="مثلاً: 24.7136" />
-                </div>
-              </div>
-
-              <div className="fg">
-                <label className="lbl">خط الطول (Longitude)</label>
-                <div className="inp-wrap">
-                  <span className="ico">↔️</span>
-                  <input className="inp" type="number" step="any"
-                    value={form.lng} onChange={f('lng')}
-                    placeholder="مثلاً: 46.6753" />
-                </div>
-              </div>
-
-              <div className="fg full">
-                <label className="lbl">ملاحظة إضافية للموقع</label>
-                <div className="inp-wrap">
-                  <span className="ico">🗺️</span>
-                  <input className="inp" value={form.locationNote} onChange={f('locationNote')}
-                    placeholder="مثلاً: أمام مجمع الملك عبدالله، الشارع الرئيسي..." />
-                </div>
-              </div>
-
-              {/* Summary preview */}
-              <div className="fg full">
-                <div className="summary-card">
-                  <div className="summary-title">📋 ملخص المنشور</div>
-                  <div className="summary-row"><span className="sk">السيارة:</span><span className="sv">{form.carBrand} {form.carModel} {form.carYear}</span></div>
-                  <div className="summary-row"><span className="sk">الوقود:</span><span className="sv">{form.fuelType}</span></div>
-                  <div className="summary-row"><span className="sk">المشكلة:</span><span className="sv">{form.title || '—'}</span></div>
-                  <div className="summary-row">
-                    <span className="sk">الموقع:</span>
-                    <span className="sv">{form.lat && form.lng ? `${form.lat}, ${form.lng}` : 'لم يُحدَّد بعد'}</span>
+                  <div className="proposal-details">
+                    <div className="prop-chip">{p.serviceType==='onsite'?'🚘 يأتي إليك':'🏭 تذهب للورشة'}</div>
+                    {p.estimatedTime&&<div className="prop-chip">⏱️ {p.estimatedTime}</div>}
                   </div>
-                </div>
-              </div>
-
-              <div className="fg full" style={{ display: 'flex', gap: '.75rem' }}>
-                <button type="button" className="btn-back" style={{ flex:1, textAlign:'center', justifyContent:'center' }}
-                  onClick={() => setStep(2)}>
-                  → رجوع
-                </button>
-                <button type="submit" className="btn-primary" style={{ flex:2 }} disabled={loading}>
-                  {loading ? <><Spin /> جاري النشر...</> : '🚨 نشر منشور العطل'}
-                </button>
-              </div>
-            </div>
-          )}
-        </form>
-      </div>
-    </div>
-  );
-};
-
-/* ══════════════════════════════════════════════════════
-   7 ── My Breakdowns page  (NEW)
-   GET /api/users/my-breakdowns
-   ══════════════════════════════════════════════════════ */
-const MyBreakdownsPage = ({ api, setToast, onNew }) => {
-  const [breakdowns, setBreakdowns] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    api('/my-breakdowns')
-      .then(r => setBreakdowns(r.data))
-      .catch(err => setToast({ type: 'error', text: err.message }))
-      .finally(() => setLoading(false));
-  }, []);
-
-  return (
-    <div className="page">
-      <div className="page-hdr" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <div className="page-title">منشوراتي</div>
-          <div className="page-sub">{breakdowns.length} منشور عطل</div>
-        </div>
-        <button className="btn-new" onClick={onNew}>+ نشر عطل جديد</button>
-      </div>
-
-      {loading ? (
-        <div className="center-msg"><Spin /> جاري التحميل...</div>
-      ) : breakdowns.length === 0 ? (
-        <div className="empty-state">
-          <div style={{ fontSize: '3.5rem', marginBottom: '.7rem' }}>🚗</div>
-          <div style={{ marginBottom: '1rem' }}>لم تنشر أي منشور عطل بعد</div>
-          <button className="btn-primary" style={{ maxWidth: 220 }} onClick={onNew}>
-            🚨 نشر أول منشور
-          </button>
-        </div>
-      ) : (
-        <div className="bd-list">
-          {breakdowns.map(b => (
-            <div key={b._id} className="bd-card">
-              <div className="bd-card-top">
-                <div className="bd-car-info">
-                  <div className="bd-car-icon">🚗</div>
-                  <div>
-                    <div className="bd-car-name">
-                      {b.carInfo?.brand} {b.carInfo?.model}
-                      {b.carInfo?.year && <span className="bd-year"> — {b.carInfo.year}</span>}
+                  <div className="proposal-desc">{p.serviceDescription}</div>
+                  {p.notes&&<div className="proposal-notes">📝 {p.notes}</div>}
+                  <div className="proposal-date">تقدّم في: {new Date(p.createdAt).toLocaleString('ar')}</div>
+                  {p.status==='pending'&&breakdown.status==='pending'&&(
+                    <div className="proposal-actions">
+                      <button className="btn-accept-prop" disabled={!!acting} onClick={()=>accept(p._id)}>
+                        {acting===p._id?<><Spin size={14}/> جاري...</>:'✅ قبول الاقتراح'}
+                      </button>
+                      <button className="btn-reject-prop" disabled={!!acting} onClick={()=>reject(p._id)}>
+                        {acting===`r-${p._id}`?<><Spin size={14}/> جاري...</>:'❌ رفض'}
+                      </button>
                     </div>
-                    <div className="bd-meta">
-                      {b.carInfo?.fuelType && <span className="bd-tag">{b.carInfo.fuelType}</span>}
-                      {b.carInfo?.transmission && <span className="bd-tag">{b.carInfo.transmission}</span>}
-                      {b.carInfo?.mileage && <span className="bd-tag">🔢 {b.carInfo.mileage.toLocaleString()} كم</span>}
-                    </div>
-                  </div>
-                </div>
-                <StatusBadge status={b.status || 'pending'} />
-              </div>
-
-              <div className="bd-title">{b.title}</div>
-              <div className="bd-desc">{b.description}</div>
-
-              <div className="bd-footer">
-                <div className="bd-footer-row">
-                  {b.location?.lat && (
-                    <span className="bd-info-chip">📍 {Number(b.location.lat).toFixed(4)}, {Number(b.location.lng).toFixed(4)}</span>
                   )}
-                  {b.problemDetails?.warningLights && <span className="bd-info-chip warn">⚠️ لمبة تحذير</span>}
-                  {b.problemDetails?.isRecurring   && <span className="bd-info-chip">🔁 متكررة</span>}
-                  {b.problemDetails?.carRunning === false && <span className="bd-info-chip err">🔴 السيارة واقفة</span>}
                 </div>
-                <div className="bd-date">{new Date(b.createdAt).toLocaleDateString('ar')}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
     </div>
   );
 };
 
-/* ════════════════════ MAIN APP ════════════════════ */
+/* ════════════ MAIN APP ════════════ */
 export default function UserDashboard() {
-  const [accessToken] = useState(() => localStorage.getItem('accessToken') || '');
-  const [user, setUser]         = useState(null);
-  const [page, setPage]         = useState('profile');
-  const [subPage, setSubPage]   = useState(null);
-  const [toast, setToastState]  = useState({ type: '', text: '' });
-  const [mounted, setMounted]   = useState(false);
-
+  const [accessToken] = useState(()=>localStorage.getItem('accessToken')||'');
+  const [user, setUser]       = useState(null);
+  const [page, setPage]       = useState('my-breakdowns');
+  const [subPage, setSubPage] = useState(null);
+  const [toast, setToastState] = useState({ type:'', text:'' });
+  const [mounted, setMounted]  = useState(false);
   const api = useApi(accessToken);
+  const setToast = msg => { setToastState(msg); setTimeout(()=>setToastState({type:'',text:''}),3500); };
 
-  const setToast = (msg) => {
-    setToastState(msg);
-    setTimeout(() => setToastState({ type: '', text: '' }), 3500);
-  };
-
-  useEffect(() => {
-    setMounted(true);
-    if (!accessToken) return;
-    api('/profile')
-      .then(r => setUser(r.data))
-      .catch(() => {});
-  }, []);
+  useEffect(()=>{ setMounted(true); if(!accessToken) return; api('/profile').then(r=>setUser(r.data)).catch(()=>{}); },[]);
 
   const navItems = [
-    { key: 'profile',       icon: '👤', label: 'الملف الشخصي' },
-    { key: 'mechanics',     icon: '🔧', label: 'الميكانيكيون' },
-    { key: 'my-reviews',    icon: '⭐', label: 'تقييماتي'      },
-    { key: 'my-breakdowns', icon: '🚨', label: 'منشوراتي'      },
+    { key:'my-breakdowns', icon:'🚗', label:'منشوراتي'       },
+    { key:'mechanics',     icon:'🔧', label:'الميكانيكيون'   },
+    { key:'my-reviews',    icon:'⭐', label:'تقييماتي'       },
+    { key:'profile',       icon:'👤', label:'الملف الشخصي'   },
   ];
 
-  const goPage = (k) => { setPage(k); setSubPage(null); };
-
-  const handleSelectMechanic = (mechanic, type) => {
-    setSubPage({ type, mechanic });
-  };
+  const goPage = k => { setPage(k); setSubPage(null); };
 
   if (!mounted) return null;
-
-  if (!accessToken) {
-    return (
-      <div style={{ minHeight:'100vh', background:'#080810', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Tajawal,sans-serif', color:'#fff', direction:'rtl', fontSize:'1.1rem' }}>
-        <div style={{ textAlign:'center' }}>
-          <div style={{ fontSize:'3rem', marginBottom:'1rem' }}>🔐</div>
-          <div>يجب تسجيل الدخول أولاً</div>
-          <div style={{ color:'rgba(255,255,255,.4)', marginTop:'.5rem', fontSize:'.9rem' }}>لا يوجد accessToken في localStorage</div>
-        </div>
-      </div>
-    );
-  }
+  if (!accessToken) return (
+    <div style={{ minHeight:'100vh', background:'#080810', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Tajawal,sans-serif', color:'#fff', direction:'rtl', fontSize:'1.1rem' }}>
+      <div style={{ textAlign:'center' }}><div style={{ fontSize:'3rem', marginBottom:'1rem' }}>🔐</div><div>يجب تسجيل الدخول أولاً</div></div>
+    </div>
+  );
 
   const renderPage = () => {
-    if (subPage?.type === 'reviews') return (
-      <MechanicReviewsPage api={api} mechanic={subPage.mechanic} setToast={setToast} onBack={() => setSubPage(null)} />
-    );
-    if (subPage?.type === 'write') return (
-      <WriteReviewPage api={api} mechanic={subPage.mechanic} setToast={setToast} onBack={() => setSubPage(null)} />
-    );
-    if (subPage?.type === 'post-breakdown') return (
-      <PostBreakdownPage api={api} accessToken={accessToken} setToast={setToast} onDone={() => { setSubPage(null); setPage('my-breakdowns'); }} />
-    );
-    if (page === 'profile')       return <ProfilePage       api={api} initialUser={user} onUpdate={setUser} setToast={setToast} />;
-    if (page === 'mechanics')     return <MechanicsPage     api={api} setToast={setToast} onSelectMechanic={handleSelectMechanic} />;
-    if (page === 'my-reviews')    return <MyReviewsPage     api={api} setToast={setToast} />;
-    if (page === 'my-breakdowns') return <MyBreakdownsPage  api={api} setToast={setToast} onNew={() => setSubPage({ type: 'post-breakdown' })} />;
+    if (subPage?.type==='reviews')             return <MechanicReviewsPage   api={api} mechanic={subPage.mechanic} setToast={setToast} onBack={()=>setSubPage(null)}/>;
+    if (subPage?.type==='write')               return <WriteReviewPage        api={api} mechanic={subPage.mechanic} setToast={setToast} onBack={()=>setSubPage(null)}/>;
+    if (subPage?.type==='post-breakdown')      return <PostBreakdownPage      accessToken={accessToken} setToast={setToast} onDone={()=>{ setSubPage(null); setPage('my-breakdowns'); }}/>;
+    if (subPage?.type==='breakdown-proposals') return <BreakdownProposalsPage api={api} breakdown={subPage.breakdown} setToast={setToast} onBack={()=>setSubPage(null)} onAccepted={()=>{ setSubPage(null); setPage('my-breakdowns'); }}/>;
+    if (page==='profile')       return <ProfilePage    api={api} initialUser={user} onUpdate={setUser} setToast={setToast}/>;
+    if (page==='mechanics')     return <MechanicsPage  api={api} setToast={setToast} onSelectMechanic={(m,t)=>setSubPage({type:t,mechanic:m})}/>;
+    if (page==='my-reviews')    return <MyReviewsPage  api={api} setToast={setToast}/>;
+    if (page==='my-breakdowns') return <MyBreakdownsPage api={api} setToast={setToast} onNew={()=>setSubPage({type:'post-breakdown'})} onViewProposals={bd=>setSubPage({type:'breakdown-proposals',breakdown:bd})}/>;
   };
 
   return (
@@ -986,14 +509,11 @@ export default function UserDashboard() {
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=Sora:wght@600;700&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
         body,html{background:#080810;font-family:'Tajawal',sans-serif;direction:rtl;color:#e2e8f0}
-
         @keyframes rot{to{transform:rotate(360deg)}}
         @keyframes up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
         @keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 
         .layout{display:flex;min-height:100vh}
-
-        /* ── sidebar ── */
         .sidebar{width:240px;flex-shrink:0;background:rgba(255,255,255,.03);border-left:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;padding:1.5rem 1rem;position:sticky;top:0;height:100vh;backdrop-filter:blur(20px)}
         .sidebar-brand{display:flex;align-items:center;gap:.6rem;margin-bottom:2rem;padding:.3rem .5rem}
         .sb-icon{width:38px;height:38px;background:linear-gradient(135deg,#0ea5e9,#6366f1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
@@ -1006,78 +526,66 @@ export default function UserDashboard() {
         .nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.8)}
         .nav-item.active{background:rgba(14,165,233,.14);color:#38bdf8;font-weight:700;border:1px solid rgba(14,165,233,.22)}
         .nav-ico{font-size:1.1rem;width:22px;text-align:center}
-
-        /* ── main ── */
         .main{flex:1;overflow-y:auto;padding:2rem}
         .page{animation:up .35s ease}
         .page-hdr{margin-bottom:1.8rem}
         .page-title{font-size:1.6rem;font-weight:900;color:#fff;margin-bottom:.3rem}
         .page-sub{font-size:.9rem;color:rgba(255,255,255,.35)}
-
-        /* ── glass card ── */
         .card-glass{background:rgba(255,255,255,.042);border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:1.8rem;backdrop-filter:blur(16px)}
-
-        /* ── form ── */
         .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
         .fg{display:flex;flex-direction:column}
         .fg.full{grid-column:1/-1}
         .lbl{font-size:.8rem;font-weight:600;color:rgba(255,255,255,.4);margin-bottom:.35rem}
-        .section-label{font-size:.95rem;font-weight:700;color:rgba(255,255,255,.5);padding:.4rem 0 .6rem;border-bottom:1px solid rgba(255,255,255,.07);margin-bottom:.3rem}
         .inp-wrap{position:relative}
         .ico{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:.9rem;opacity:.4;pointer-events:none}
         .inp{width:100%;padding:.78rem 2.5rem .78rem .9rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);border-radius:11px;color:#fff;font-family:'Tajawal',sans-serif;font-size:.95rem;outline:none;transition:border-color .2s,background .2s,box-shadow .2s;text-align:right}
         .inp::placeholder{color:rgba(255,255,255,.2)}
         .inp:focus{border-color:#0ea5e9;background:rgba(14,165,233,.08);box-shadow:0 0 0 3px rgba(14,165,233,.15)}
-        .inp-select{appearance:none;-webkit-appearance:none;padding-left:2rem;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,.3)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 12px center}
+        .inp-select{appearance:none;padding-left:1.8rem;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,.3)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 10px center}
         .inp-select option{background:#1a1a2e;color:#fff}
         textarea.inp{padding-right:.9rem}
-
-        /* ── toggles ── */
         .toggle-group{display:flex;flex-direction:column;gap:.8rem;padding:.8rem;background:rgba(255,255,255,.04);border-radius:14px;border:1px solid rgba(255,255,255,.07)}
         .toggle-row{display:flex;align-items:center;gap:.8rem;cursor:pointer}
         .toggle-cb{display:none}
         .toggle-track{width:38px;height:22px;background:rgba(255,255,255,.1);border-radius:99px;position:relative;flex-shrink:0;transition:background .2s}
-        .toggle-thumb{width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:3px;right:3px;transition:transform .2s,background .2s}
+        .toggle-thumb{width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:3px;right:3px;transition:transform .2s}
         .toggle-cb:checked + .toggle-track{background:linear-gradient(135deg,#0ea5e9,#6366f1)}
         .toggle-cb:checked + .toggle-track .toggle-thumb{transform:translateX(-16px)}
         .toggle-lbl{font-size:.85rem;color:rgba(255,255,255,.55)}
-
-        /* ── buttons ── */
         .btn-primary{padding:.82rem 1.4rem;background:linear-gradient(135deg,#0ea5e9,#6366f1);border:none;border-radius:12px;color:#fff;font-family:'Tajawal',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:transform .2s,box-shadow .2s,opacity .2s;box-shadow:0 4px 18px rgba(14,165,233,.35);width:100%}
         .btn-primary:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 24px rgba(14,165,233,.5)}
         .btn-primary:disabled{opacity:.55;cursor:not-allowed}
         .btn-back{display:inline-flex;align-items:center;gap:.4rem;padding:.45rem .9rem;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:9px;color:rgba(255,255,255,.6);font-family:'Tajawal',sans-serif;font-size:.85rem;cursor:pointer;margin-bottom:1.2rem;transition:all .2s}
         .btn-back:hover{background:rgba(255,255,255,.12);color:#fff}
+        .btn-outline-sm{padding:.44rem .95rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:9px;color:rgba(255,255,255,.6);font-family:'Tajawal',sans-serif;font-size:.83rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem}
+        .btn-outline-sm:hover{background:rgba(255,255,255,.12);color:#fff}
         .btn-sm{padding:.42rem .9rem;border-radius:9px;font-family:'Tajawal',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .18s;border:none}
         .btn-outline{background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.12)}
         .btn-outline:hover{background:rgba(255,255,255,.12);color:#fff}
         .btn-primary-sm{background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;box-shadow:0 2px 10px rgba(14,165,233,.3)}
-        .btn-primary-sm:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(14,165,233,.45)}
         .btn-new{padding:.6rem 1.2rem;background:linear-gradient(135deg,#f59e0b,#ef4444);border:none;border-radius:11px;color:#fff;font-family:'Tajawal',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;box-shadow:0 3px 14px rgba(239,68,68,.3);transition:all .2s;white-space:nowrap}
         .btn-new:hover{transform:translateY(-2px);box-shadow:0 5px 18px rgba(239,68,68,.4)}
         .btn-locate{width:100%;padding:.9rem 1.4rem;background:rgba(16,185,129,.12);border:1px dashed rgba(16,185,129,.4);border-radius:12px;color:#6ee7b7;font-family:'Tajawal',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.5rem}
-        .btn-locate:hover:not(:disabled){background:rgba(16,185,129,.2);border-color:rgba(16,185,129,.6)}
+        .btn-locate:hover:not(:disabled){background:rgba(16,185,129,.2)}
         .btn-locate:disabled{opacity:.55;cursor:not-allowed}
-
-        /* ── profile ── */
+        .btn-view-proposals{padding:.4rem .85rem;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.25);border-radius:9px;color:#38bdf8;font-family:'Tajawal',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap}
+        .btn-view-proposals:hover{background:rgba(56,189,248,.2)}
+        .btn-complete{padding:.55rem 1.1rem;background:rgba(167,139,250,.14);border:1px solid rgba(167,139,250,.3);border-radius:10px;color:#a78bfa;font-family:'Tajawal',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem}
+        .btn-complete:hover:not(:disabled){background:rgba(167,139,250,.25)}
+        .btn-complete:disabled{opacity:.5;cursor:not-allowed}
         .profile-avatar-row{display:flex;align-items:center;gap:1.2rem;margin-bottom:1.8rem;padding-bottom:1.4rem;border-bottom:1px solid rgba(255,255,255,.07)}
         .big-avatar{width:64px;height:64px;background:linear-gradient(135deg,#0ea5e9,#6366f1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0}
         .pname{font-size:1.15rem;font-weight:700;color:#fff}
         .pemail{font-size:.83rem;color:rgba(255,255,255,.4);margin:.2rem 0}
-        .prole-badge{display:inline-block;font-size:.7rem;font-weight:700;padding:.18rem .55rem;border-radius:20px;background:rgba(14,165,233,.18);color:#38bdf8;letter-spacing:.4px}
-
-        /* ── mechanics grid ── */
         .mech-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
-        .mech-card{background:rgba(255,255,255,.042);border:1px solid rgba(255,255,255,.09);border-radius:18px;padding:1.3rem;transition:border-color .2s,transform .2s;backdrop-filter:blur(12px)}
+        .mech-card{background:rgba(255,255,255,.042);border:1px solid rgba(255,255,255,.09);border-radius:18px;padding:1.3rem;transition:border-color .2s,transform .2s}
         .mech-card:hover{border-color:rgba(14,165,233,.3);transform:translateY(-2px)}
         .mech-avatar{width:48px;height:48px;background:linear-gradient(135deg,#0ea5e9,#6366f1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:.8rem}
         .mech-name{font-size:1rem;font-weight:700;color:#fff;margin-bottom:.15rem}
         .mech-user{font-size:.8rem;color:rgba(255,255,255,.38);margin-bottom:.5rem}
         .mech-bio{font-size:.82rem;color:rgba(255,255,255,.5);margin-bottom:.4rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-        .mech-phone,.mech-loc{font-size:.78rem;color:rgba(255,255,255,.35);margin-bottom:.25rem}
+        .mech-phone{font-size:.78rem;color:rgba(255,255,255,.35);margin-bottom:.25rem}
         .mech-actions{display:flex;gap:.5rem;margin-top:.9rem}
-
-        /* ── reviews ── */
         .avg-row{display:flex;align-items:center;gap:.6rem;margin-top:.5rem}
         .avg-num{font-size:1.2rem;font-weight:900;color:#f59e0b}
         .rev-count{font-size:.85rem;color:rgba(255,255,255,.35)}
@@ -1091,8 +599,6 @@ export default function UserDashboard() {
         .review-right{text-align:left;display:flex;flex-direction:column;align-items:flex-end;gap:.3rem}
         .review-date{font-size:.75rem;color:rgba(255,255,255,.3)}
         .review-comment{font-size:.88rem;color:rgba(255,255,255,.65);line-height:1.6}
-
-        /* ── breakdown cards ── */
         .bd-list{display:flex;flex-direction:column;gap:1rem}
         .bd-card{background:rgba(255,255,255,.042);border:1px solid rgba(255,255,255,.09);border-radius:18px;padding:1.4rem;transition:border-color .2s,transform .2s}
         .bd-card:hover{border-color:rgba(239,68,68,.25);transform:translateY(-1px)}
@@ -1111,76 +617,67 @@ export default function UserDashboard() {
         .bd-info-chip.warn{background:rgba(251,191,36,.1);color:#fbbf24;border-color:rgba(251,191,36,.2)}
         .bd-info-chip.err{background:rgba(239,68,68,.1);color:#f87171;border-color:rgba(239,68,68,.2)}
         .bd-date{font-size:.75rem;color:rgba(255,255,255,.28)}
-
-        /* ── location ── */
         .loc-preview{display:flex;align-items:center;gap:.9rem;padding:.9rem 1.1rem;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:12px}
         .loc-pin{font-size:1.4rem}
-
-        /* ── summary ── */
         .summary-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:1rem 1.2rem}
         .summary-title{font-size:.85rem;font-weight:700;color:rgba(255,255,255,.45);margin-bottom:.8rem}
         .summary-row{display:flex;justify-content:space-between;align-items:center;padding:.3rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
         .summary-row:last-child{border-bottom:none}
         .sk{font-size:.8rem;color:rgba(255,255,255,.3)}
         .sv{font-size:.85rem;font-weight:600;color:rgba(255,255,255,.7);text-align:left}
-
-        /* ── image upload ── */
         .img-upload-area{display:block;cursor:pointer;border:1px dashed rgba(255,255,255,.18);border-radius:14px;transition:border-color .2s,background .2s;overflow:hidden}
         .img-upload-area:hover{border-color:rgba(14,165,233,.5);background:rgba(14,165,233,.04)}
         .img-upload-placeholder{padding:1.8rem;text-align:center}
         .img-thumbs-row{display:flex;flex-wrap:wrap;gap:.7rem;padding:.9rem}
         .img-thumb-wrap{position:relative;width:90px;height:90px;border-radius:10px;overflow:hidden;flex-shrink:0}
         .img-thumb{width:100%;height:100%;object-fit:cover}
-        .img-remove{position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:50%;background:rgba(239,68,68,.85);border:none;color:#fff;font-size:.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0}
-        .img-add-more{width:90px;height:90px;border-radius:10px;border:1px dashed rgba(255,255,255,.2);display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(255,255,255,.35);cursor:pointer;transition:all .2s}
-        .img-add-more:hover{border-color:rgba(14,165,233,.4);color:#38bdf8}
-
-        /* ── misc ── */
+        .img-remove{position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:50%;background:rgba(239,68,68,.85);border:none;color:#fff;font-size:.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+        .img-add-more{width:90px;height:90px;border-radius:10px;border:1px dashed rgba(255,255,255,.2);display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(255,255,255,.35);cursor:pointer}
         .center-msg{text-align:center;padding:3rem;color:rgba(255,255,255,.35);font-size:.95rem;display:flex;align-items:center;justify-content:center;gap:.6rem}
         .empty-state{text-align:center;padding:4rem 2rem;color:rgba(255,255,255,.3);font-size:.95rem;display:flex;flex-direction:column;align-items:center}
 
-        /* ── mobile ── */
-        @media(max-width:700px){
-          .sidebar{display:none}
-          .main{padding:1rem}
-          .form-grid{grid-template-columns:1fr}
-          .fg.full{grid-column:1}
-        }
+        /* ═══ Proposal cards ═══ */
+        .proposal-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:18px;padding:1.3rem 1.5rem;transition:border-color .2s,transform .15s}
+        .proposal-card:hover{border-color:rgba(14,165,233,.25);transform:translateY(-1px)}
+        .proposal-accepted{border-color:rgba(16,185,129,.35)!important;background:rgba(16,185,129,.04)!important}
+        .accepted-banner{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);border-radius:10px;padding:.6rem 1rem;font-size:.85rem;font-weight:700;color:#6ee7b7;margin-bottom:1rem;text-align:center}
+        .proposal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1rem}
+        .mech-av{width:48px;height:48px;background:linear-gradient(135deg,#0ea5e9,#6366f1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+        .mech-pname{font-size:1rem;font-weight:700;color:#fff}
+        .mech-pusername{font-size:.78rem;color:rgba(255,255,255,.35);margin:.15rem 0}
+        .mech-pphone{font-size:.78rem;color:rgba(255,255,255,.35)}
+        .proposal-price{text-align:left;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:12px;padding:.6rem 1rem;min-width:80px;flex-shrink:0}
+        .price-val{font-size:1.4rem;font-weight:900;color:#f59e0b;line-height:1}
+        .price-cur{font-size:.72rem;color:rgba(245,158,11,.6);margin-top:.1rem}
+        .proposal-details{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.8rem}
+        .prop-chip{font-size:.78rem;padding:.25rem .65rem;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:20px;color:rgba(255,255,255,.55)}
+        .proposal-desc{font-size:.9rem;color:rgba(255,255,255,.65);line-height:1.65;margin-bottom:.6rem}
+        .proposal-notes{font-size:.8rem;color:rgba(255,255,255,.35);padding:.4rem .7rem;border-right:2px solid rgba(255,255,255,.12);margin-bottom:.6rem}
+        .proposal-date{font-size:.75rem;color:rgba(255,255,255,.25);margin-bottom:.8rem}
+        .proposal-actions{display:flex;gap:.75rem;padding-top:.9rem;border-top:1px solid rgba(255,255,255,.07)}
+        .btn-accept-prop{flex:2;padding:.75rem;background:linear-gradient(135deg,rgba(16,185,129,.2),rgba(16,185,129,.12));border:1px solid rgba(16,185,129,.35);border-radius:12px;color:#6ee7b7;font-family:'Tajawal',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.4rem}
+        .btn-accept-prop:hover:not(:disabled){background:rgba(16,185,129,.3);border-color:rgba(16,185,129,.55);transform:translateY(-1px)}
+        .btn-accept-prop:disabled{opacity:.5;cursor:not-allowed}
+        .btn-reject-prop{flex:1;padding:.75rem;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:12px;color:#fca5a5;font-family:'Tajawal',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.4rem}
+        .btn-reject-prop:hover:not(:disabled){background:rgba(239,68,68,.18)}
+        .btn-reject-prop:disabled{opacity:.5;cursor:not-allowed}
+
+        @media(max-width:700px){.sidebar{display:none}.main{padding:1rem}.form-grid{grid-template-columns:1fr}.fg.full{grid-column:1}}
       `}</style>
 
       <div className="layout">
         <nav className="sidebar">
-          <div className="sidebar-brand">
-            <div className="sb-icon">🚗</div>
-            <div className="sb-name">AutoCare</div>
-          </div>
-
-          {user && (
-            <div className="user-mini">
-              <div className="um-av">{user.role === 'mechanic' ? '🔧' : '👤'}</div>
-              <div>
-                <div className="um-name">{user.fullName}</div>
-                <div className="um-role">{user.role}</div>
-              </div>
-            </div>
-          )}
-
-          {navItems.map(n => (
-            <button key={n.key}
-              className={`nav-item ${page === n.key && !subPage ? 'active' : ''}`}
-              onClick={() => goPage(n.key)}>
-              <span className="nav-ico">{n.icon}</span>
-              {n.label}
+          <div className="sidebar-brand"><div className="sb-icon">🚗</div><div className="sb-name">AutoCare</div></div>
+          {user&&<div className="user-mini"><div className="um-av">👤</div><div><div className="um-name">{user.fullName}</div><div className="um-role">مستخدم</div></div></div>}
+          {navItems.map(n=>(
+            <button key={n.key} className={`nav-item ${page===n.key&&!subPage?'active':''}`} onClick={()=>goPage(n.key)}>
+              <span className="nav-ico">{n.icon}</span>{n.label}
             </button>
           ))}
         </nav>
-
-        <main className="main">
-          {renderPage()}
-        </main>
+        <main className="main">{renderPage()}</main>
       </div>
-
-      <Toast msg={toast} onClose={() => setToastState({ type: '', text: '' })} />
+      <Toast msg={toast} onClose={()=>setToastState({type:'',text:''})}/>
     </>
   );
 }
