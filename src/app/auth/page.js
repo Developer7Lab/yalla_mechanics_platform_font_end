@@ -414,7 +414,6 @@ export default function AuthPage() {
             <div className="redirect-hints">
               <div className="rh-row"><span>👤 مستخدم</span><span className="rh-arrow">←</span><span>/user</span></div>
               <div className="rh-row"><span>🔧 ميكانيكي</span><span className="rh-arrow">←</span><span>/mechanics</span></div>
-              <div className="rh-row"><span>🛡️ مدير</span><span className="rh-arrow">←</span><span>/admin</span></div>
             </div>
 
           </div>
