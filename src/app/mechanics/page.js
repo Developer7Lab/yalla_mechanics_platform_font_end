@@ -935,6 +935,11 @@ export default function MechanicDashboard() {
     if (page==='reviews')       return <ReviewsPage       api={api} setToast={setToast}/>;
   };
 
+  const handleLogout = () => {
+  localStorage.removeItem('accessToken');
+  window.location.href = '/auth'; // أو أي مسار تسجيل الدخول لديك
+};
+
   return (
     <>
       <style>{`
@@ -1120,6 +1125,18 @@ export default function MechanicDashboard() {
               {n.badge>0 && <span className="nav-badge">{n.badge}</span>}
             </button>
           ))}
+          <div style={{ marginTop:'auto', paddingTop:'1rem' }}>
+  <button
+    className="nav-btn"
+    onClick={handleLogout}
+    style={{ color:'rgba(239,68,68,.7)', width:'100%' }}
+  >
+    <div className="nav-left">
+      <span className="nav-ico">🚪</span>
+      تسجيل الخروج
+    </div>
+  </button>
+</div>
         </nav>
         <main className="main">{renderPage()}</main>
       </div>

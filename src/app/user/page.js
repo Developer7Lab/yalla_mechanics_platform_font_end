@@ -503,6 +503,11 @@ export default function UserDashboard() {
     if (page==='my-breakdowns') return <MyBreakdownsPage api={api} setToast={setToast} onNew={()=>setSubPage({type:'post-breakdown'})} onViewProposals={bd=>setSubPage({type:'breakdown-proposals',breakdown:bd})}/>;
   };
 
+  const handleLogout = () => {
+  localStorage.removeItem('accessToken');
+  window.location.href = '/auth'; 
+};
+
   return (
     <>
       <style>{`
@@ -674,6 +679,18 @@ export default function UserDashboard() {
               <span className="nav-ico">{n.icon}</span>{n.label}
             </button>
           ))}
+          <div style={{ marginTop:'auto', paddingTop:'1rem' }}>
+  <button
+    className="nav-btn"
+    onClick={handleLogout}
+    style={{ color:'rgba(239,68,68,.7)', width:'100%' }}
+  >
+    <div className="nav-left">
+      <span className="nav-ico">🚪</span>
+      تسجيل الخروج
+    </div>
+  </button>
+</div>
         </nav>
         <main className="main">{renderPage()}</main>
       </div>
