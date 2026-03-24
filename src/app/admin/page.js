@@ -1,30 +1,9 @@
 'use client'
-// ════════════════════════════════════════════════════════════════════════════
-//  AdminDashboard.jsx  — complete admin panel (single file)
-//
-//  GET    /api/admin/profile
-//  PUT    /api/admin/profile
-//  GET    /api/admin/stats
-//  GET    /api/admin/location-requests/pending
-//  GET    /api/admin/location-requests
-//  GET    /api/admin/location-requests/:id/verify
-//  POST   /api/admin/location-requests/:id/approve
-//  POST   /api/admin/location-requests/:id/reject
-//  GET    /api/admin/mechanics
-//  DELETE /api/admin/mechanics/:id/location
-//  DELETE /api/admin/mechanics/:id
-//  GET    /api/admin/users
-//  DELETE /api/admin/users/:id
-//  GET    /api/admin/breakdowns          ← NEW
-//  PATCH  /api/admin/breakdowns/:id/status ← NEW
-//  DELETE /api/admin/breakdowns/:id        ← NEW
-// ════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useCallback } from 'react';
 
 const API_BASE = 'http://localhost:3001/api/admin';
 
-/* ── fetch helper ── */
 const useApi = (accessToken) =>
   useCallback(async (path, options = {}) => {
     const res = await fetch(`${API_BASE}${path}`, {
@@ -40,12 +19,10 @@ const useApi = (accessToken) =>
     return data;
   }, [accessToken]);
 
-/* ── Spinner ── */
 const Spin = ({ size = 16 }) => (
   <span style={{ display: 'inline-block', width: size, height: size, border: '2px solid rgba(255,255,255,.2)', borderTopColor: '#fff', borderRadius: '50%', animation: 'rot .65s linear infinite', verticalAlign: 'middle' }} />
 );
 
-/* ── Toast ── */
 const Toast = ({ msg, onClose }) => {
   if (!msg.text) return null;
   return (
@@ -55,7 +32,6 @@ const Toast = ({ msg, onClose }) => {
   );
 };
 
-/* ── Confirm modal ── */
 const ConfirmModal = ({ open, title, body, onConfirm, onCancel, danger = true }) => {
   if (!open) return null;
   return (
@@ -72,7 +48,6 @@ const ConfirmModal = ({ open, title, body, onConfirm, onCancel, danger = true })
   );
 };
 
-/* ── Status badge ── */
 const StatusBadge = ({ status }) => {
   const m = {
     pending:    ['قيد الانتظار', '#f59e0b', 'rgba(245,158,11,.14)'],
@@ -86,7 +61,6 @@ const StatusBadge = ({ status }) => {
   return <span style={{ fontSize: '.7rem', fontWeight: 700, padding: '.18rem .6rem', borderRadius: 20, background: bg, color, border: `1px solid ${color}44` }}>{label}</span>;
 };
 
-/* ── Stat card ── */
 const StatCard = ({ icon, value, label, color, bg }) => (
   <div className="stat-card">
     <div style={{ width: 44, height: 44, borderRadius: 13, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', marginBottom: '.7rem' }}>{icon}</div>
@@ -95,9 +69,6 @@ const StatCard = ({ icon, value, label, color, bg }) => (
   </div>
 );
 
-/* ════════════════════════════════ PAGES ════════════════════════════════ */
-
-/* 1 ── Overview */
 const OverviewPage = ({ api, setToast }) => {
   const [stats,   setStats]   = useState(null);
   const [pending, setPending] = useState([]);
@@ -144,7 +115,6 @@ const OverviewPage = ({ api, setToast }) => {
   );
 };
 
-/* 2 ── Profile */
 const ProfilePage = ({ api, user, onUpdate, setToast }) => {
   const [form, setForm]       = useState({ username: user?.username || '', fullName: user?.fullName || '', email: user?.email || '', bio: user?.profileData?.bio || '', phone: user?.profileData?.phone || '' });
   const [loading, setLoading] = useState(false);
@@ -186,7 +156,6 @@ const ProfilePage = ({ api, user, onUpdate, setToast }) => {
   );
 };
 
-/* 3 ── Location Requests */
 const LocationRequestsPage = ({ api, setToast }) => {
   const [requests,   setRequests]   = useState([]);
   const [filter,     setFilter]     = useState('all');
@@ -313,7 +282,6 @@ const LocationRequestsPage = ({ api, setToast }) => {
   );
 };
 
-/* 4 ── Mechanics */
 const MechanicsPage = ({ api, setToast }) => {
   const [mechanics, setMechanics] = useState([]);
   const [loading,   setLoading]   = useState(true);
@@ -391,7 +359,6 @@ const MechanicsPage = ({ api, setToast }) => {
   );
 };
 
-/* 5 ── Users */
 const UsersPage = ({ api, setToast }) => {
   const [users,   setUsers]   = useState([]);
   const [loading, setLoading] = useState(true);
@@ -454,17 +421,13 @@ const UsersPage = ({ api, setToast }) => {
   );
 };
 
-/* ══════════════════════════════════════════════════════════════════════
-   6 ── Breakdowns Page  (NEW)
-   يعرض كل منشورات العطل مع فلترة + تغيير حالة + حذف
-   ══════════════════════════════════════════════════════════════════════ */
 const BreakdownsPage = ({ api, setToast }) => {
   const [breakdowns, setBreakdowns] = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [filter,     setFilter]     = useState('all');
   const [search,     setSearch]     = useState('');
   const [confirm,    setConfirm]    = useState({ open: false, id: null, title: '' });
-  const [expanded,   setExpanded]   = useState(null); // منشور مفتوح للتفاصيل
+  const [expanded,   setExpanded]   = useState(null);
   const [statusLoading, setStatusLoading] = useState(null);
 
   const STATUS_FILTERS = [
@@ -495,7 +458,6 @@ const BreakdownsPage = ({ api, setToast }) => {
 
   useEffect(() => { load(); }, [filter]);
 
-  /* تغيير الحالة */
   const changeStatus = async (id, newStatus) => {
     try {
       setStatusLoading(id);
@@ -512,7 +474,6 @@ const BreakdownsPage = ({ api, setToast }) => {
     } finally { setStatusLoading(null); }
   };
 
-  /* حذف المنشور */
   const deleteBreakdown = async () => {
     try {
       await api(`/breakdowns/${confirm.id}`, { method: 'DELETE' });
@@ -523,7 +484,6 @@ const BreakdownsPage = ({ api, setToast }) => {
     } finally { setConfirm({ open: false }); }
   };
 
-  /* فلترة بالبحث */
   const filtered = breakdowns.filter(b => {
     const q = search.toLowerCase();
     return !q ||
@@ -533,7 +493,6 @@ const BreakdownsPage = ({ api, setToast }) => {
       b.carInfo?.model?.toLowerCase().includes(q);
   });
 
-  /* إحصائيات سريعة */
   const counts = breakdowns.reduce((acc, b) => {
     acc[b.status] = (acc[b.status] || 0) + 1;
     return acc;
@@ -541,7 +500,6 @@ const BreakdownsPage = ({ api, setToast }) => {
 
   return (
     <div className="page">
-      {/* Header */}
       <div className="page-hdr" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <div className="page-title">🚨 منشورات العطل</div>
@@ -552,7 +510,6 @@ const BreakdownsPage = ({ api, setToast }) => {
         </button>
       </div>
 
-      {/* Quick stats row */}
       <div className="bd-stats-row">
         {[
           { key: 'pending',    icon: '⏳', label: 'معلقة',        color: '#f59e0b' },
@@ -569,7 +526,6 @@ const BreakdownsPage = ({ api, setToast }) => {
         ))}
       </div>
 
-      {/* Filter + Search */}
       <div style={{ display: 'flex', gap: '.7rem', marginBottom: '1.2rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <div className="filter-tabs" style={{ marginBottom: 0 }}>
           {STATUS_FILTERS.map(([k, l]) => (
@@ -583,7 +539,6 @@ const BreakdownsPage = ({ api, setToast }) => {
         </div>
       </div>
 
-      {/* List */}
       {loading ? (
         <div className="center-msg"><Spin size={20} /><span>جاري التحميل...</span></div>
       ) : filtered.length === 0 ? (
@@ -598,9 +553,7 @@ const BreakdownsPage = ({ api, setToast }) => {
             return (
               <div key={b._id} className="bd-admin-card">
 
-                {/* ── Card Top ── */}
                 <div className="bd-admin-top">
-                  {/* user info */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem', flex: 1, minWidth: 0 }}>
                     <div className="urow-av user-color" style={{ width: 38, height: 38, fontSize: '.95rem', flexShrink: 0 }}>👤</div>
                     <div style={{ minWidth: 0 }}>
@@ -613,11 +566,9 @@ const BreakdownsPage = ({ api, setToast }) => {
                     </div>
                   </div>
 
-                  {/* status badge */}
                   <StatusBadge status={b.status} />
                 </div>
 
-                {/* ── Car info bar ── */}
                 <div className="bd-car-bar">
                   <div className="bd-car-icon-sm">🚗</div>
                   <div style={{ flex: 1 }}>
@@ -631,11 +582,9 @@ const BreakdownsPage = ({ api, setToast }) => {
                   </div>
                 </div>
 
-                {/* ── Title & desc ── */}
                 <div className="bd-admin-title">{b.title}</div>
                 <div className="bd-admin-desc">{b.description}</div>
 
-                {/* ── Chips ── */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.35rem', marginBottom: '.8rem' }}>
                   {b.location?.lat && (
                     <span className="bd-info-chip">📍 {Number(b.location.lat).toFixed(4)}, {Number(b.location.lng).toFixed(4)}{b.location.note ? ` — ${b.location.note}` : ''}</span>
@@ -649,7 +598,6 @@ const BreakdownsPage = ({ api, setToast }) => {
                   {b.photos?.length > 0 && <span className="bd-info-chip">📷 {b.photos.length} صور</span>}
                 </div>
 
-                {/* ── Expandable photos ── */}
                 {isOpen && b.photos?.length > 0 && (
                   <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginBottom: '.8rem' }}>
                     {b.photos.map((p, i) => (
@@ -659,9 +607,7 @@ const BreakdownsPage = ({ api, setToast }) => {
                   </div>
                 )}
 
-                {/* ── Actions ── */}
                 <div className="bd-admin-actions">
-                  {/* Status changer */}
                   <div style={{ position: 'relative', flex: 1 }}>
                     <select
                       className="inp inp-select"
@@ -677,13 +623,11 @@ const BreakdownsPage = ({ api, setToast }) => {
                     )}
                   </div>
 
-                  {/* Expand / collapse details */}
                   <button className="btn-xs btn-verify"
                     onClick={() => setExpanded(isOpen ? null : b._id)}>
                     {isOpen ? '▲ إخفاء' : '▼ تفاصيل'}
                   </button>
 
-                  {/* Delete */}
                   <button className="btn-xs btn-reject"
                     onClick={() => setConfirm({ open: true, id: b._id, title: b.title })}>
                     🗑 حذف
@@ -707,7 +651,6 @@ const BreakdownsPage = ({ api, setToast }) => {
   );
 };
 
-/* ════════════════════ MAIN APP ════════════════════ */
 export default function AdminDashboard() {
   const [accessToken] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('accessToken') : '') || '');
   const [user,    setUser]    = useState(null);
@@ -739,7 +682,7 @@ export default function AdminDashboard() {
     { key: 'requests',    icon: '📋', label: 'طلبات الموقع', badge: pending },
     { key: 'mechanics',   icon: '🔧', label: 'الميكانيكيون'   },
     { key: 'users',       icon: '👥', label: 'المستخدمون'     },
-    { key: 'breakdowns',  icon: '🚨', label: 'منشورات العطل'  }, // ← NEW
+    { key: 'breakdowns',  icon: '🚨', label: 'منشورات العطل'  },
   ];
 
   if (!mounted) return null;
@@ -751,17 +694,19 @@ export default function AdminDashboard() {
       </div>
     );
   }
+
   const handleLogout = () => {
-  localStorage.removeItem('accessToken');
-  window.location.href = '/auth'; // أو أي مسار تسجيل الدخول لديك
-};
+    localStorage.removeItem('accessToken');
+    window.location.href = '/auth';
+  };
+
   const renderPage = () => {
     if (page === 'overview')   return <OverviewPage         api={api} setToast={setToast} />;
     if (page === 'profile')    return <ProfilePage          api={api} user={user} onUpdate={setUser} setToast={setToast} />;
     if (page === 'requests')   return <LocationRequestsPage api={api} setToast={setToast} />;
     if (page === 'mechanics')  return <MechanicsPage        api={api} setToast={setToast} />;
     if (page === 'users')      return <UsersPage            api={api} setToast={setToast} />;
-    if (page === 'breakdowns') return <BreakdownsPage       api={api} setToast={setToast} />; // ← NEW
+    if (page === 'breakdowns') return <BreakdownsPage       api={api} setToast={setToast} />;
   };
 
   return (
@@ -777,7 +722,6 @@ export default function AdminDashboard() {
 
         .layout{display:flex;min-height:100vh}
 
-        /* ── sidebar ── */
         .sidebar{width:240px;flex-shrink:0;background:rgba(255,255,255,.022);border-left:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;padding:1.4rem .9rem;position:sticky;top:0;height:100vh;backdrop-filter:blur(20px)}
         .sb-brand{display:flex;align-items:center;gap:.65rem;margin-bottom:1.8rem;padding:.25rem .5rem}
         .sb-logo{width:40px;height:40px;background:linear-gradient(135deg,#6366f1,#a855f7);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.2rem}
@@ -793,28 +737,23 @@ export default function AdminDashboard() {
         .nav-ico{font-size:1rem;width:20px;text-align:center}
         .nav-badge{background:#ef4444;color:#fff;font-size:.64rem;font-weight:800;padding:.15rem .45rem;border-radius:20px;min-width:18px;text-align:center;animation:pulse 2s infinite}
 
-        /* ── main ── */
         .main{flex:1;overflow-y:auto;padding:2rem;max-width:960px}
         .page{animation:up .35s ease}
         .page-hdr{margin-bottom:1.8rem}
         .page-title{font-size:1.55rem;font-weight:900;color:#fff;display:flex;align-items:center;gap:.6rem}
         .page-sub{font-size:.87rem;color:rgba(255,255,255,.3);margin-top:.25rem}
 
-        /* ── glass card ── */
         .card-glass{background:rgba(255,255,255,.032);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:1.6rem;backdrop-filter:blur(16px)}
         .sec-title{font-size:.95rem;font-weight:700;color:#fff;display:flex;align-items:center;gap:.5rem}
 
-        /* ── stat grid ── */
         .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.85rem}
         .stat-card{background:rgba(255,255,255,.038);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:1.2rem;text-align:center;transition:border-color .2s,transform .2s}
         .stat-card:hover{transform:translateY(-2px);border-color:rgba(99,102,241,.28)}
 
-        /* ── filter tabs ── */
         .filter-tabs{display:flex;gap:.4rem;margin-bottom:1.2rem;flex-wrap:wrap}
         .ftab{padding:.42rem .9rem;border-radius:9px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.04);color:rgba(255,255,255,.45);font-family:'Tajawal',sans-serif;font-size:.83rem;font-weight:500;cursor:pointer;transition:all .2s}
         .ftab.on{background:rgba(99,102,241,.16);border-color:rgba(99,102,241,.35);color:#a5b4fc;font-weight:700}
 
-        /* ── request cards ── */
         .req-card{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:1.2rem;transition:border-color .2s}
         .req-header{display:flex;align-items:flex-start;justify-content:space-between;gap:.7rem;margin-bottom:.9rem}
         .req-body{display:flex;flex-direction:column;gap:.35rem;margin-bottom:.8rem}
@@ -827,7 +766,6 @@ export default function AdminDashboard() {
         .verify-result{display:flex;align-items:center;gap:.7rem;padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
         .verify-result:last-child{border-bottom:none}
 
-        /* ── user rows ── */
         .user-row{display:flex;align-items:center;gap:.9rem;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:.9rem 1rem;transition:border-color .2s}
         .user-row:hover{border-color:rgba(99,102,241,.22)}
         .urow-av{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
@@ -836,7 +774,6 @@ export default function AdminDashboard() {
         .mini-row{display:flex;align-items:center;justify-content:space-between;gap:.7rem;padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
         .mini-row:last-child{border-bottom:none}
 
-        /* ── form ── */
         .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
         .fg{display:flex;flex-direction:column}
         .fg.full{grid-column:1/-1}
@@ -850,7 +787,6 @@ export default function AdminDashboard() {
         .inp-select{appearance:none;-webkit-appearance:none;padding-left:2rem;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,.3)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 10px center}
         .inp-select option{background:#1a1a2e;color:#fff}
 
-        /* ── profile ── */
         .profile-hero{display:flex;align-items:center;gap:1.1rem;margin-bottom:1.8rem;padding-bottom:1.4rem;border-bottom:1px solid rgba(255,255,255,.07)}
         .hero-av{width:62px;height:62px;background:linear-gradient(135deg,#6366f1,#a855f7);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.7rem;flex-shrink:0}
         .hero-name{font-size:1.12rem;font-weight:700;color:#fff}
@@ -858,7 +794,6 @@ export default function AdminDashboard() {
         .role-badge{display:inline-block;font-size:.7rem;font-weight:700;padding:.18rem .55rem;border-radius:20px;letter-spacing:.4px}
         .admin-badge{background:rgba(99,102,241,.18);color:#a5b4fc}
 
-        /* ── breakdown admin cards ── */
         .bd-stats-row{display:flex;gap:.7rem;margin-bottom:1.2rem;flex-wrap:wrap}
         .bd-stat-chip{display:flex;align-items:center;gap:.5rem;padding:.55rem 1rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;cursor:pointer;transition:all .2s}
         .bd-stat-chip:hover{background:rgba(255,255,255,.08)}
@@ -877,7 +812,6 @@ export default function AdminDashboard() {
         .bd-info-chip.err{background:rgba(239,68,68,.1);color:#f87171;border-color:rgba(239,68,68,.2)}
         .bd-admin-actions{display:flex;gap:.6rem;align-items:center;padding-top:.85rem;border-top:1px solid rgba(255,255,255,.06);flex-wrap:wrap}
 
-        /* ── buttons ── */
         .btn-primary{padding:.82rem;background:linear-gradient(135deg,#6366f1,#a855f7);border:none;border-radius:12px;color:#fff;font-family:'Tajawal',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:transform .2s,box-shadow .2s,opacity .2s;box-shadow:0 4px 18px rgba(99,102,241,.38);width:100%}
         .btn-primary:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 24px rgba(99,102,241,.52)}
         .btn-primary:disabled{opacity:.55;cursor:not-allowed}
@@ -899,7 +833,6 @@ export default function AdminDashboard() {
         .btn-success{padding:.6rem 1.1rem;background:rgba(16,185,129,.16);border:1px solid rgba(16,185,129,.28);border-radius:10px;color:#6ee7b7;font-family:'Tajawal',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s}
         .btn-success:hover{background:rgba(16,185,129,.26)}
 
-        /* ── misc ── */
         .center-msg{display:flex;align-items:center;justify-content:center;gap:.7rem;padding:3rem;color:rgba(255,255,255,.33);font-size:.92rem}
         .empty-state{text-align:center;padding:4rem 2rem;color:rgba(255,255,255,.28);font-size:.92rem}
 
@@ -927,16 +860,16 @@ export default function AdminDashboard() {
               {n.badge > 0 && <span className="nav-badge">{n.badge}</span>}
             </button>
           ))}
-            <button
-    className="nav-btn"
-    onClick={handleLogout}
-    style={{ color:'rgba(239,68,68,.7)', width:'100%' }}
-  >
-    <div className="nav-left">
-      <span className="nav-ico">🚪</span>
-      تسجيل الخروج
-    </div>
-  </button>
+          <button
+            className="nav-btn"
+            onClick={handleLogout}
+            style={{ color:'rgba(239,68,68,.7)', width:'100%' }}
+          >
+            <div className="nav-left">
+              <span className="nav-ico">🚪</span>
+              تسجيل الخروج
+            </div>
+          </button>
         </nav>
 
         <main className="main">{renderPage()}</main>
@@ -946,4 +879,3 @@ export default function AdminDashboard() {
     </>
   );
 }
-
