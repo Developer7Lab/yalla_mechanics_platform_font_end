@@ -254,120 +254,712 @@ const FUEL_TYPES  = ['بنزين','ديزل','كهربائي','هايبرد'];
 const TRANS_TYPES = ['أوتوماتيك','يدوي (عادي)'];
 
 const PostBreakdownPage = ({ accessToken, setToast, onDone }) => {
-  const [step, setStep]           = useState(1);
-  const [loading, setLoading]     = useState(false);
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
   const [locLoading, setLocLoading] = useState(false);
-  const [images, setImages]       = useState([]);
-  const [form, setForm] = useState({ carBrand:'', carModel:'', carYear:'', fuelType:'', transmission:'', mileage:'', title:'', description:'', problemStarted:'', isRecurring:false, warningLights:false, carRunning:true, lat:'', lng:'', locationNote:'' });
-  const handleImages = e => { const files=Array.from(e.target.files); const valid=files.filter(f=>f.type.startsWith('image/')&&f.size<=5*1024*1024); if(valid.length!==files.length) setToast({type:'error',text:'بعض الصور تجاوزت 5MB'}); const combined=[...images,...valid.map(file=>({file,preview:URL.createObjectURL(file)}))].slice(0,5); setImages(combined); };
-  const removeImage = idx => setImages(prev=>{ URL.revokeObjectURL(prev[idx].preview); return prev.filter((_,i)=>i!==idx); });
-  const f  = k => e => setForm(p=>({...p,[k]:e.target.value}));
-  const fb = k => e => setForm(p=>({...p,[k]:e.target.checked}));
-  const getLocation = () => { if(!navigator.geolocation){ setToast({type:'error',text:'المتصفح لا يدعم تحديد الموقع'}); return; } setLocLoading(true); navigator.geolocation.getCurrentPosition(pos=>{ setForm(p=>({...p,lat:pos.coords.latitude.toFixed(6),lng:pos.coords.longitude.toFixed(6)})); setLocLoading(false); },()=>{ setToast({type:'error',text:'تعذّر تحديد الموقع'}); setLocLoading(false); }); };
+  const [images, setImages] = useState([]);
+  const [address, setAddress] = useState('');
+  const [form, setForm] = useState({
+    carBrand: '',
+    carModel: '',
+    carYear: '',
+    fuelType: '',
+    transmission: '',
+    mileage: '',
+    title: '',
+    description: '',
+    problemStarted: '',
+    isRecurring: false,
+    warningLights: false,
+    carRunning: true,
+    lat: '',
+    lng: '',
+    locationNote: '',
+  });
+
+  const handleImages = e => {
+    const files = Array.from(e.target.files);
+    const valid = files.filter(
+      f => f.type.startsWith('image/') && f.size <= 5 * 1024 * 1024
+    );
+
+    if (valid.length !== files.length) {
+      setToast({ type: 'error', text: 'بعض الصور تجاوزت 5MB' });
+    }
+
+    const combined = [
+      ...images,
+      ...valid.map(file => ({
+        file,
+        preview: URL.createObjectURL(file),
+      })),
+    ].slice(0, 5);
+
+    setImages(combined);
+  };
+
+  const removeImage = idx =>
+    setImages(prev => {
+      URL.revokeObjectURL(prev[idx].preview);
+      return prev.filter((_, i) => i !== idx);
+    });
+
+  const f = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
+  const fb = k => e => setForm(p => ({ ...p, [k]: e.target.checked }));
+
+  const fetchAddressFromCoords = async (lat, lng) => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+        {
+          headers: {
+            Accept: 'application/json',
+          },
+        }
+      );
+
+      const data = await res.json();
+
+      if (data?.display_name) {
+        setAddress(data.display_name);
+      } else {
+        setAddress('تم تحديد الموقع');
+      }
+    } catch (err) {
+      setAddress('تم تحديد الموقع');
+    }
+  };
+
+  const getLocation = () => {
+    if (!navigator.geolocation) {
+      setToast({ type: 'error', text: 'المتصفح لا يدعم تحديد الموقع' });
+      return;
+    }
+
+    setLocLoading(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async pos => {
+        const lat = pos.coords.latitude.toFixed(6);
+        const lng = pos.coords.longitude.toFixed(6);
+
+        setForm(p => ({ ...p, lat, lng }));
+        await fetchAddressFromCoords(lat, lng);
+        setLocLoading(false);
+      },
+      () => {
+        setToast({ type: 'error', text: 'تعذّر تحديد الموقع' });
+        setLocLoading(false);
+      }
+    );
+  };
+
+  const handleManualLocationBlur = async () => {
+    if (form.lat && form.lng) {
+      await fetchAddressFromCoords(form.lat, form.lng);
+    }
+  };
+
   const handleSubmit = async e => {
     e.preventDefault();
-    if(!form.lat||!form.lng){ setToast({type:'error',text:'يرجى تحديد الموقع الجغرافي'}); return; }
+
+    if (form.problemStarted) {
+      const selectedDate = new Date(form.problemStarted);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (isNaN(selectedDate.getTime())) {
+        setToast({ type: 'error', text: '❌ تاريخ المشكلة غير صالح' });
+        return;
+      }
+
+      if (selectedDate > today) {
+        setToast({ type: 'error', text: '❌ لا يمكن اختيار تاريخ في المستقبل' });
+        return;
+      }
+
+      if (form.carYear && selectedDate.getFullYear() < Number(form.carYear)) {
+        setToast({
+          type: 'error',
+          text: '❌ تاريخ المشكلة لا يمكن أن يكون قبل سنة صنع السيارة',
+        });
+        return;
+      }
+    }
+
+    if (!form.lat || !form.lng) {
+      setToast({ type: 'error', text: 'يرجى تحديد الموقع الجغرافي' });
+      return;
+    }
+
     try {
       setLoading(true);
+
       const fd = new FormData();
-      fd.append('title',form.title); fd.append('description',form.description);
-      fd.append('carInfo',JSON.stringify({ brand:form.carBrand, model:form.carModel, year:Number(form.carYear), fuelType:form.fuelType, transmission:form.transmission, mileage:Number(form.mileage) }));
-      fd.append('problemDetails',JSON.stringify({ startedAt:form.problemStarted, isRecurring:form.isRecurring, warningLights:form.warningLights, carRunning:form.carRunning }));
-      fd.append('location',JSON.stringify({ lat:Number(form.lat), lng:Number(form.lng), note:form.locationNote }));
-      images.forEach(img=>fd.append('photos',img.file));
-      const res = await fetch(`${API_BASE}/breakdowns`,{ method:'POST', headers:{ Authorization:`Bearer ${accessToken}` }, body:fd });
+      fd.append('title', form.title);
+      fd.append('description', form.description);
+
+      fd.append(
+        'carInfo',
+        JSON.stringify({
+          brand: form.carBrand,
+          model: form.carModel,
+          year: Number(form.carYear),
+          fuelType: form.fuelType,
+          transmission: form.transmission,
+          mileage: Number(form.mileage),
+        })
+      );
+
+      fd.append(
+        'problemDetails',
+        JSON.stringify({
+          startedAt: form.problemStarted,
+          isRecurring: form.isRecurring,
+          warningLights: form.warningLights,
+          carRunning: form.carRunning,
+        })
+      );
+
+      fd.append(
+        'location',
+        JSON.stringify({
+          lat: Number(form.lat),
+          lng: Number(form.lng),
+          note: form.locationNote,
+          address,
+        })
+      );
+
+      images.forEach(img => fd.append('photos', img.file));
+
+      const res = await fetch(`${API_BASE}/breakdowns`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: fd,
+      });
+
       const data = await res.json();
-      if(!res.ok||!data.success) throw new Error(data.error||'Request failed');
-      setToast({ type:'success', text:'تم نشر منشور العطل بنجاح! 🚗' });
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Request failed');
+      }
+
+      setToast({ type: 'success', text: 'تم نشر منشور العطل بنجاح! 🚗' });
       onDone();
-    } catch(err){ setToast({type:'error',text:err.message}); } finally { setLoading(false); }
+    } catch (err) {
+      setToast({ type: 'error', text: err.message });
+    } finally {
+      setLoading(false);
+    }
   };
-  const canNext1 = form.carBrand&&form.carModel&&form.carYear&&form.fuelType&&form.transmission;
-  const canNext2 = form.title&&form.description;
+
+  const canNext1 =
+    form.carBrand &&
+    form.carModel &&
+    form.carYear &&
+    form.fuelType &&
+    form.transmission;
+
+  const canNext2 = form.title && form.description;
+
   const StepDots = () => (
-    <div style={{ display:'flex', gap:8, marginBottom:'1.8rem', alignItems:'center' }}>
-      {[1,2,3].map(s=>(<React.Fragment key={s}><div style={{ width:step===s?32:10, height:10, borderRadius:99, background:s<=step?'linear-gradient(135deg,#0ea5e9,#6366f1)':'rgba(255,255,255,.1)', transition:'all .3s', flexShrink:0 }}/>{s<3&&<div style={{ flex:1, height:1, background:s<step?'rgba(14,165,233,.4)':'rgba(255,255,255,.08)' }}/>}</React.Fragment>))}
-      <span style={{ color:'rgba(255,255,255,.3)', fontSize:'.8rem', marginRight:4 }}>{step===1?'معلومات السيارة':step===2?'وصف المشكلة':'الموقع الجغرافي'}</span>
+    <div style={{ display: 'flex', gap: 8, marginBottom: '1.8rem', alignItems: 'center' }}>
+      {[1, 2, 3].map(s => (
+        <React.Fragment key={s}>
+          <div
+            style={{
+              width: step === s ? 32 : 10,
+              height: 10,
+              borderRadius: 99,
+              background:
+                s <= step
+                  ? 'linear-gradient(135deg,#0ea5e9,#6366f1)'
+                  : 'rgba(255,255,255,.1)',
+              transition: 'all .3s',
+              flexShrink: 0,
+            }}
+          />
+          {s < 3 && (
+            <div
+              style={{
+                flex: 1,
+                height: 1,
+                background:
+                  s < step ? 'rgba(14,165,233,.4)' : 'rgba(255,255,255,.08)',
+              }}
+            />
+          )}
+        </React.Fragment>
+      ))}
+      <span
+        style={{
+          color: 'rgba(255,255,255,.3)',
+          fontSize: '.8rem',
+          marginRight: 4,
+        }}
+      >
+        {step === 1
+          ? 'معلومات السيارة'
+          : step === 2
+          ? 'وصف المشكلة'
+          : 'الموقع الجغرافي'}
+      </span>
     </div>
   );
+
   return (
     <div className="page">
-      <div className="page-hdr"><div className="page-title">🚨 نشر عطل سيارة</div><div className="page-sub">أخبر الميكانيكيين بمشكلة سيارتك</div></div>
-      <div className="card-glass" style={{ maxWidth:620 }}>
-        <StepDots/>
-        <form onSubmit={step<3?e=>{e.preventDefault();setStep(s=>s+1);}:handleSubmit}>
-          {step===1&&(
+      <div className="page-hdr">
+        <div className="page-title">🚨 نشر عطل سيارة</div>
+        <div className="page-sub">أخبر الميكانيكيين بمشكلة سيارتك</div>
+      </div>
+
+      <div className="card-glass" style={{ maxWidth: 620 }}>
+        <StepDots />
+
+        <form onSubmit={step < 3 ? e => { e.preventDefault(); setStep(s => s + 1); } : handleSubmit}>
+          {step === 1 && (
             <div className="form-grid">
-              <div className="fg"><label className="lbl">الماركة *</label><div className="inp-wrap"><span className="ico">🚗</span><select className="inp inp-select" value={form.carBrand} onChange={f('carBrand')} required><option value="">اختر الماركة...</option>{CAR_BRANDS.map(b=><option key={b} value={b}>{b}</option>)}</select></div></div>
-              <div className="fg"><label className="lbl">الموديل *</label><div className="inp-wrap"><span className="ico">🏷️</span><input className="inp" value={form.carModel} onChange={f('carModel')} placeholder="مثلاً: كامري" required/></div></div>
-              <div className="fg"><label className="lbl">سنة الصنع *</label><div className="inp-wrap"><span className="ico">📅</span><input className="inp" type="number" min="1990" max="2025" value={form.carYear} onChange={f('carYear')} placeholder="2019" required/></div></div>
-              <div className="fg"><label className="lbl">نوع الوقود *</label><div className="inp-wrap"><span className="ico">⛽</span><select className="inp inp-select" value={form.fuelType} onChange={f('fuelType')} required><option value="">اختر...</option>{FUEL_TYPES.map(t=><option key={t} value={t}>{t}</option>)}</select></div></div>
-              <div className="fg"><label className="lbl">ناقل الحركة *</label><div className="inp-wrap"><span className="ico">⚙️</span><select className="inp inp-select" value={form.transmission} onChange={f('transmission')} required><option value="">اختر...</option>{TRANS_TYPES.map(t=><option key={t} value={t}>{t}</option>)}</select></div></div>
-              <div className="fg"><label className="lbl">الكيلومترات</label><div className="inp-wrap"><span className="ico">🔢</span><input className="inp" type="number" min="0" value={form.mileage} onChange={f('mileage')} placeholder="85000"/></div></div>
+              <div className="fg">
+                <label className="lbl">الماركة *</label>
+                <div className="inp-wrap">
+                  <span className="ico">🚗</span>
+                  <select
+                    className="inp inp-select"
+                    value={form.carBrand}
+                    onChange={f('carBrand')}
+                    required
+                  >
+                    <option value="">اختر الماركة...</option>
+                    {CAR_BRANDS.map(b => (
+                      <option key={b} value={b}>
+                        {b}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="fg">
+                <label className="lbl">الموديل *</label>
+                <div className="inp-wrap">
+                  <span className="ico">🏷️</span>
+                  <input
+                    className="inp"
+                    value={form.carModel}
+                    onChange={f('carModel')}
+                    placeholder="مثلاً: كامري"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="fg">
+                <label className="lbl">سنة الصنع *</label>
+                <div className="inp-wrap">
+                  <span className="ico">📅</span>
+                  <input
+                    className="inp"
+                    type="number"
+                    min="1990"
+                    max={new Date().getFullYear()}
+                    value={form.carYear}
+                    onChange={f('carYear')}
+                    placeholder="2019"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="fg">
+                <label className="lbl">نوع الوقود *</label>
+                <div className="inp-wrap">
+                  <span className="ico">⛽</span>
+                  <select
+                    className="inp inp-select"
+                    value={form.fuelType}
+                    onChange={f('fuelType')}
+                    required
+                  >
+                    <option value="">اختر...</option>
+                    {FUEL_TYPES.map(t => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="fg">
+                <label className="lbl">ناقل الحركة *</label>
+                <div className="inp-wrap">
+                  <span className="ico">⚙️</span>
+                  <select
+                    className="inp inp-select"
+                    value={form.transmission}
+                    onChange={f('transmission')}
+                    required
+                  >
+                    <option value="">اختر...</option>
+                    {TRANS_TYPES.map(t => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="fg">
+                <label className="lbl">الكيلومترات</label>
+                <div className="inp-wrap">
+                  <span className="ico">🔢</span>
+                  <input
+                    className="inp"
+                    type="number"
+                    min="0"
+                    value={form.mileage}
+                    onChange={f('mileage')}
+                    placeholder="85000"
+                  />
+                </div>
+              </div>
+
               <div className="fg full">
                 <label className="lbl">صور السيارة (اختياري — حتى 5 صور)</label>
                 <label className="img-upload-area" htmlFor="car-imgs">
-                  <input id="car-imgs" type="file" accept="image/*" multiple style={{ display:'none' }} onChange={handleImages}/>
-                  {images.length===0?<div className="img-upload-placeholder"><div style={{ fontSize:'2rem', marginBottom:'.4rem' }}>📷</div><div style={{ fontWeight:700, color:'rgba(255,255,255,.5)', fontSize:'.9rem' }}>اضغط لرفع الصور</div></div>
-                    :<div className="img-thumbs-row">{images.map((img,i)=><div key={i} className="img-thumb-wrap"><img src={img.preview} className="img-thumb" alt=""/><button type="button" className="img-remove" onClick={e=>{e.preventDefault();removeImage(i);}}>✕</button></div>)}{images.length<5&&<div className="img-add-more"><div style={{ fontSize:'1.4rem' }}>+</div></div>}</div>}
+                  <input
+                    id="car-imgs"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={handleImages}
+                  />
+
+                  {images.length === 0 ? (
+                    <div className="img-upload-placeholder">
+                      <div style={{ fontSize: '2rem', marginBottom: '.4rem' }}>📷</div>
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          color: 'rgba(255,255,255,.5)',
+                          fontSize: '.9rem',
+                        }}
+                      >
+                        اضغط لرفع الصور
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="img-thumbs-row">
+                      {images.map((img, i) => (
+                        <div key={i} className="img-thumb-wrap">
+                          <img src={img.preview} className="img-thumb" alt="" />
+                          <button
+                            type="button"
+                            className="img-remove"
+                            onClick={e => {
+                              e.preventDefault();
+                              removeImage(i);
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                      {images.length < 5 && (
+                        <div className="img-add-more">
+                          <div style={{ fontSize: '1.4rem' }}>+</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </label>
               </div>
-              <div className="fg full"><button type="submit" className="btn-primary" disabled={!canNext1}>التالي: وصف المشكلة ←</button></div>
+
+              <div className="fg full">
+                <button type="submit" className="btn-primary" disabled={!canNext1}>
+                  التالي: وصف المشكلة ←
+                </button>
+              </div>
             </div>
           )}
-          {step===2&&(
+
+          {step === 2 && (
             <div className="form-grid">
-              <div className="fg full"><label className="lbl">عنوان المشكلة *</label><div className="inp-wrap"><span className="ico">📝</span><input className="inp" value={form.title} onChange={f('title')} placeholder="مثلاً: صوت غريب من المحرك" required maxLength={120}/></div></div>
-              <div className="fg full"><label className="lbl">وصف المشكلة * ({form.description.length}/1000)</label><textarea className="inp" rows={5} required maxLength={1000} value={form.description} onChange={f('description')} placeholder="اشرح المشكلة بالتفصيل..." style={{ resize:'vertical', paddingTop:'.75rem' }}/></div>
-<div className="fg">
-  <label className="lbl">متى بدأت المشكلة؟</label>
-  <div className="inp-wrap">
-    <span className="ico">📅</span>
-    <input
-      className="inp"
-      type="date"
-      value={form.problemStarted}
-      onChange={f('problemStarted')}
-      max={new Date().toISOString().split("T")[0]}
-      min={
-        form.carYear
-          ? `${form.carYear}-01-01`
-          : undefined
-      }
-    />
-  </div>
-</div>              <div className="fg">
-                <div className="toggle-group">
-                  <label className="toggle-row"><input type="checkbox" className="toggle-cb" checked={form.isRecurring} onChange={fb('isRecurring')}/><div className="toggle-track"><div className="toggle-thumb"/></div><span className="toggle-lbl">المشكلة تتكرر</span></label>
-                  <label className="toggle-row"><input type="checkbox" className="toggle-cb" checked={form.warningLights} onChange={fb('warningLights')}/><div className="toggle-track"><div className="toggle-thumb"/></div><span className="toggle-lbl">لمبة تحذير ظهرت</span></label>
-                  <label className="toggle-row"><input type="checkbox" className="toggle-cb" checked={form.carRunning} onChange={fb('carRunning')}/><div className="toggle-track"><div className="toggle-thumb"/></div><span className="toggle-lbl">السيارة لا تزال تعمل</span></label>
+              <div className="fg full">
+                <label className="lbl">عنوان المشكلة *</label>
+                <div className="inp-wrap">
+                  <span className="ico">📝</span>
+                  <input
+                    className="inp"
+                    value={form.title}
+                    onChange={f('title')}
+                    placeholder="مثلاً: صوت غريب من المحرك"
+                    required
+                    maxLength={120}
+                  />
                 </div>
               </div>
-              <div className="fg full" style={{ display:'flex', gap:'.75rem' }}>
-                <button type="button" className="btn-back" style={{ flex:1, justifyContent:'center' }} onClick={()=>setStep(1)}>→ رجوع</button>
-                <button type="submit" className="btn-primary" style={{ flex:2 }} disabled={!canNext2}>التالي: الموقع ←</button>
+
+              <div className="fg full">
+                <label className="lbl">وصف المشكلة * ({form.description.length}/1000)</label>
+                <textarea
+                  className="inp"
+                  rows={5}
+                  required
+                  maxLength={1000}
+                  value={form.description}
+                  onChange={f('description')}
+                  placeholder="اشرح المشكلة بالتفصيل..."
+                  style={{ resize: 'vertical', paddingTop: '.75rem' }}
+                />
+              </div>
+
+              <div className="fg">
+                <label className="lbl">متى بدأت المشكلة؟</label>
+                <div className="inp-wrap">
+                  <span className="ico">📅</span>
+                  <input
+                    className="inp"
+                    type="date"
+                    value={form.problemStarted}
+                    onChange={f('problemStarted')}
+                    max={new Date().toISOString().split('T')[0]}
+                    min={form.carYear ? `${form.carYear}-01-01` : undefined}
+                  />
+                </div>
+              </div>
+
+              <div className="fg">
+                <div className="toggle-group">
+                  <label className="toggle-row">
+                    <input
+                      type="checkbox"
+                      className="toggle-cb"
+                      checked={form.isRecurring}
+                      onChange={fb('isRecurring')}
+                    />
+                    <div className="toggle-track">
+                      <div className="toggle-thumb" />
+                    </div>
+                    <span className="toggle-lbl">المشكلة تتكرر</span>
+                  </label>
+
+                  <label className="toggle-row">
+                    <input
+                      type="checkbox"
+                      className="toggle-cb"
+                      checked={form.warningLights}
+                      onChange={fb('warningLights')}
+                    />
+                    <div className="toggle-track">
+                      <div className="toggle-thumb" />
+                    </div>
+                    <span className="toggle-lbl">لمبة تحذير ظهرت</span>
+                  </label>
+
+                  <label className="toggle-row">
+                    <input
+                      type="checkbox"
+                      className="toggle-cb"
+                      checked={form.carRunning}
+                      onChange={fb('carRunning')}
+                    />
+                    <div className="toggle-track">
+                      <div className="toggle-thumb" />
+                    </div>
+                    <span className="toggle-lbl">السيارة لا تزال تعمل</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="fg full" style={{ display: 'flex', gap: '.75rem' }}>
+                <button
+                  type="button"
+                  className="btn-back"
+                  style={{ flex: 1, justifyContent: 'center' }}
+                  onClick={() => setStep(1)}
+                >
+                  → رجوع
+                </button>
+
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  style={{ flex: 2 }}
+                  disabled={!canNext2}
+                >
+                  التالي: الموقع ←
+                </button>
               </div>
             </div>
           )}
-          {step===3&&(
+
+          {step === 3 && (
             <div className="form-grid">
-              <div className="fg full"><button type="button" className="btn-locate" onClick={getLocation} disabled={locLoading}>{locLoading?<><Spin/> جاري تحديد الموقع...</>:'📡 تحديد موقعي الحالي تلقائياً'}</button></div>
-              {form.lat&&form.lng&&<div className="fg full"><div className="loc-preview"><div className="loc-pin">📍</div><div><div style={{ color:'#6ee7b7', fontWeight:700, fontSize:'.88rem' }}>تم تحديد الموقع</div><div style={{ color:'rgba(255,255,255,.35)', fontSize:'.78rem', marginTop:'.15rem' }}>{form.lat}, {form.lng}</div></div></div></div>}
-              <div className="fg"><label className="lbl">خط العرض</label><div className="inp-wrap"><span className="ico">↕️</span><input className="inp" type="number" step="any" value={form.lat} onChange={f('lat')} placeholder="31.9539"/></div></div>
-              <div className="fg"><label className="lbl">خط الطول</label><div className="inp-wrap"><span className="ico">↔️</span><input className="inp" type="number" step="any" value={form.lng} onChange={f('lng')} placeholder="35.9106"/></div></div>
-              <div className="fg full"><label className="lbl">ملاحظة الموقع</label><div className="inp-wrap"><span className="ico">🗺️</span><input className="inp" value={form.locationNote} onChange={f('locationNote')} placeholder="أمام مجمع..."/></div></div>
+              <div className="fg full">
+                <button
+                  type="button"
+                  className="btn-locate"
+                  onClick={getLocation}
+                  disabled={locLoading}
+                >
+                  {locLoading ? (
+                    <>
+                      <Spin /> جاري تحديد الموقع...
+                    </>
+                  ) : (
+                    '📡 تحديد موقعي الحالي تلقائياً'
+                  )}
+                </button>
+              </div>
+
+              {form.lat && form.lng && (
+                <div className="fg full">
+                  <div
+                    className="loc-preview"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() =>
+                      window.open(
+                        `https://www.google.com/maps?q=${form.lat},${form.lng}`,
+                        '_blank'
+                      )
+                    }
+                    title="افتح الموقع على الخريطة"
+                  >
+                    <div className="loc-pin">📍</div>
+                    <div>
+                      <div
+                        style={{
+                          color: '#6ee7b7',
+                          fontWeight: 700,
+                          fontSize: '.88rem',
+                        }}
+                      >
+                        تم تحديد الموقع
+                      </div>
+
+                      <div
+                        style={{
+                          color: 'rgba(255,255,255,.6)',
+                          fontSize: '.85rem',
+                          marginTop: '.15rem',
+                        }}
+                      >
+                        {address || 'جاري تحميل اسم الموقع...'}
+                      </div>
+
+                      <div
+                        style={{
+                          color: 'rgba(255,255,255,.35)',
+                          fontSize: '.75rem',
+                          marginTop: '.15rem',
+                        }}
+                      >
+                        {form.lat}, {form.lng}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="fg">
+                <label className="lbl">خط العرض</label>
+                <div className="inp-wrap">
+                  <span className="ico">↕️</span>
+                  <input
+                    className="inp"
+                    type="number"
+                    step="any"
+                    value={form.lat}
+                    onChange={f('lat')}
+                    onBlur={handleManualLocationBlur}
+                    placeholder="31.9539"
+                  />
+                </div>
+              </div>
+
+              <div className="fg">
+                <label className="lbl">خط الطول</label>
+                <div className="inp-wrap">
+                  <span className="ico">↔️</span>
+                  <input
+                    className="inp"
+                    type="number"
+                    step="any"
+                    value={form.lng}
+                    onChange={f('lng')}
+                    onBlur={handleManualLocationBlur}
+                    placeholder="35.9106"
+                  />
+                </div>
+              </div>
+
+              <div className="fg full">
+                <label className="lbl">ملاحظة الموقع</label>
+                <div className="inp-wrap">
+                  <span className="ico">🗺️</span>
+                  <input
+                    className="inp"
+                    value={form.locationNote}
+                    onChange={f('locationNote')}
+                    placeholder="أمام مجمع..."
+                  />
+                </div>
+              </div>
+
               <div className="fg full">
                 <div className="summary-card">
                   <div className="summary-title">📋 ملخص المنشور</div>
-                  <div className="summary-row"><span className="sk">السيارة:</span><span className="sv">{form.carBrand} {form.carModel} {form.carYear}</span></div>
-                  <div className="summary-row"><span className="sk">الوقود:</span><span className="sv">{form.fuelType}</span></div>
-                  <div className="summary-row"><span className="sk">المشكلة:</span><span className="sv">{form.title||'—'}</span></div>
-                  <div className="summary-row"><span className="sk">الموقع:</span><span className="sv">{form.lat&&form.lng?`${form.lat}, ${form.lng}`:'لم يُحدَّد'}</span></div>
+                  <div className="summary-row">
+                    <span className="sk">السيارة:</span>
+                    <span className="sv">
+                      {form.carBrand} {form.carModel} {form.carYear}
+                    </span>
+                  </div>
+                  <div className="summary-row">
+                    <span className="sk">الوقود:</span>
+                    <span className="sv">{form.fuelType}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span className="sk">المشكلة:</span>
+                    <span className="sv">{form.title || '—'}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span className="sk">الموقع:</span>
+                    <span className="sv">
+                      {address || (form.lat && form.lng ? `${form.lat}, ${form.lng}` : 'لم يُحدَّد')}
+                    </span>
+                  </div>
                 </div>
               </div>
-              <div className="fg full" style={{ display:'flex', gap:'.75rem' }}>
-                <button type="button" className="btn-back" style={{ flex:1, justifyContent:'center' }} onClick={()=>setStep(2)}>→ رجوع</button>
-                <button type="submit" className="btn-primary" style={{ flex:2 }} disabled={loading}>{loading?<><Spin/> جاري النشر...</>:'🚨 نشر منشور العطل'}</button>
+
+              <div className="fg full" style={{ display: 'flex', gap: '.75rem' }}>
+                <button
+                  type="button"
+                  className="btn-back"
+                  style={{ flex: 1, justifyContent: 'center' }}
+                  onClick={() => setStep(2)}
+                >
+                  → رجوع
+                </button>
+
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  style={{ flex: 2 }}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Spin /> جاري النشر...
+                    </>
+                  ) : (
+                    '🚨 نشر منشور العطل'
+                  )}
+                </button>
               </div>
             </div>
           )}
