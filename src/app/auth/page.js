@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 const API_URL = `${API_BASE_URL}/api/auth`;
 
@@ -35,6 +36,12 @@ export default function AuthPage() {
       setChecking(false);
     }
   }, [router]);
+
+  // دالة للتحقق من صحة البريد الإلكتروني
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   const authFetch = useCallback(async (path, options = {}, tok = '') => {
     const headers = { 'Content-Type': 'application/json' };
@@ -75,6 +82,13 @@ export default function AuthPage() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    
+    // التحقق من صحة البريد الإلكتروني قبل البدء
+    if (!isValidEmail(formData.email)) {
+      setMessage({ type: 'error', text: 'يرجى إدخال بريد إلكتروني صحيح (مثال: name@example.com)' });
+      return;
+    }
+
     try {
       setLoading(true);
       setMessage({ type: '', text: '' });
@@ -84,8 +98,8 @@ export default function AuthPage() {
           username: formData.username,
           password: formData.password,
           fullName: formData.fullName,
-          email:    formData.email,
-          role:     formData.role,
+          email:     formData.email,
+          role:      formData.role,
         }),
       });
       const { accessToken, refreshToken, user } = res.data;
@@ -117,9 +131,6 @@ export default function AuthPage() {
 
         @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
         @keyframes rot{to{transform:rotate(360deg)}}
-        @keyframes shimmer{0%{background-position:200% center}100%{background-position:-200% center}}
-        @keyframes blobFloat{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-20px,30px) scale(1.06)}}
-        @keyframes blobFloat2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(25px,-20px) scale(1.04)}}
         @keyframes toastPop{from{opacity:0;transform:translateY(6px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 
         .shell{
@@ -135,9 +146,6 @@ export default function AuthPage() {
           padding:3rem;position:relative;overflow:hidden;
           border-left:1px solid rgba(255,255,255,.06);
         }
-        .lp-blob1{position:absolute;width:420px;height:420px;background:radial-gradient(circle,rgba(99,102,241,.22) 0%,transparent 70%);top:-80px;left:-100px;border-radius:50%;animation:blobFloat 8s ease-in-out infinite}
-        .lp-blob2{position:absolute;width:340px;height:340px;background:radial-gradient(circle,rgba(236,72,153,.16) 0%,transparent 70%);bottom:-60px;right:-80px;border-radius:50%;animation:blobFloat2 10s ease-in-out infinite}
-        .lp-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(99,102,241,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,.06) 1px,transparent 1px);background-size:40px 40px;opacity:.7}
         .lp-content{position:relative;z-index:1;text-align:center}
         .lp-logo{width:72px;height:72px;background:linear-gradient(135deg,#6366f1,#ec4899);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 1.5rem;box-shadow:0 0 40px rgba(99,102,241,.4)}
         .lp-title{font-family:'Sora',sans-serif;font-size:2.4rem;font-weight:800;line-height:1.2;margin-bottom:.8rem;
@@ -146,7 +154,6 @@ export default function AuthPage() {
         .lp-sub{font-size:1rem;color:rgba(255,255,255,.38);line-height:1.65;max-width:320px;margin:0 auto 2.5rem}
         .lp-features{display:flex;flex-direction:column;gap:.9rem;text-align:right}
         .lp-feat{display:flex;align-items:center;gap:.75rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:.85rem 1rem}
-        .lp-feat-ico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
         .lp-feat-text .ft{font-size:.9rem;font-weight:700;color:#fff}
         .lp-feat-text .fs{font-size:.78rem;color:rgba(255,255,255,.35)}
 
@@ -155,7 +162,6 @@ export default function AuthPage() {
           padding:2rem 1rem;
           background:#07080f;position:relative;overflow:hidden;
         }
-        .rp-blob{position:absolute;width:600px;height:600px;background:radial-gradient(circle,rgba(99,102,241,.08) 0%,transparent 60%);top:50%;left:50%;transform:translate(-50%,-50%);border-radius:50%;pointer-events:none}
 
         .card{
           width:100%;max-width:430px;position:relative;z-index:1;
@@ -165,11 +171,6 @@ export default function AuthPage() {
           backdrop-filter:blur(30px);
           animation:fadeUp .55s cubic-bezier(.16,1,.3,1) both;
         }
-
-        .mobile-brand{display:none;align-items:center;gap:.7rem;justify-content:center;margin-bottom:1.8rem}
-        @media(max-width:768px){.mobile-brand{display:flex}}
-        .mob-logo{width:44px;height:44px;background:linear-gradient(135deg,#6366f1,#ec4899);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem}
-        .mob-name{font-family:'Sora',sans-serif;font-size:1.3rem;font-weight:700;color:#fff}
 
         .card-title{font-family:'Sora',sans-serif;font-size:1.5rem;font-weight:800;color:#fff;margin-bottom:.3rem}
         .card-sub{font-size:.88rem;color:rgba(255,255,255,.32);margin-bottom:1.8rem}
@@ -192,7 +193,6 @@ export default function AuthPage() {
           outline:none;transition:border-color .2s,background .2s,box-shadow .2s;
           text-align:right;
         }
-        .inp::placeholder{color:rgba(255,255,255,.2)}
         .inp:focus{border-color:#6366f1;background:rgba(99,102,241,.09);box-shadow:0 0 0 3px rgba(99,102,241,.18)}
 
         .role-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
@@ -205,7 +205,6 @@ export default function AuthPage() {
           cursor:pointer;transition:all .2s;text-align:center;
         }
         .role-btn.sel{background:rgba(99,102,241,.18);border-color:rgba(99,102,241,.55);color:#a5b4fc;font-weight:700}
-        .role-btn:hover:not(.sel){background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18)}
 
         .btn-sub{
           margin-top:.3rem;padding:.9rem;
@@ -217,7 +216,6 @@ export default function AuthPage() {
           display:flex;align-items:center;justify-content:center;gap:.5rem;
         }
         .btn-sub:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 28px rgba(99,102,241,.58)}
-        .btn-sub:active:not(:disabled){transform:translateY(0)}
         .btn-sub:disabled{opacity:.55;cursor:not-allowed}
 
         .spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:rot .65s linear infinite;flex-shrink:0}
@@ -232,13 +230,8 @@ export default function AuthPage() {
         .t-ok{background:rgba(16,185,129,.11);color:#6ee7b7;border:1px solid rgba(16,185,129,.22)}
         .t-err{background:rgba(239,68,68,.11);color:#fca5a5;border:1px solid rgba(239,68,68,.22)}
 
-        .divider{display:flex;align-items:center;gap:.75rem;margin:.5rem 0}
-        .div-line{flex:1;height:1px;background:rgba(255,255,255,.07)}
-        .div-txt{font-size:.75rem;color:rgba(255,255,255,.22)}
-
         .flink{text-align:center;margin-top:1.1rem;font-size:.85rem;color:rgba(255,255,255,.3)}
         .flink span{color:#818cf8;cursor:pointer;font-weight:600;transition:color .2s}
-        .flink span:hover{color:#a5b4fc}
 
         .redirect-hints{display:flex;flex-direction:column;gap:.45rem;margin-top:1.4rem;padding-top:1.2rem;border-top:1px solid rgba(255,255,255,.06)}
         .rh-row{display:flex;align-items:center;gap:.6rem;font-size:.78rem;color:rgba(255,255,255,.28)}
@@ -246,11 +239,7 @@ export default function AuthPage() {
       `}</style>
 
       <div className="shell">
-
         <div className="left-panel">
-          <div className="lp-blob1" />
-          <div className="lp-blob2" />
-          <div className="lp-grid" />
           <div className="lp-content">
             <div className="lp-logo">🔐</div>
             <div className="lp-title">منصة يلاّ</div>
@@ -271,21 +260,12 @@ export default function AuthPage() {
                   <div className="fs">سجّل نشاطك وابدأ باستقبال العملاء</div>
                 </div>
               </div>
-              
-              
             </div>
           </div>
         </div>
 
         <div className="right-panel">
-          <div className="rp-blob" />
           <div className="card">
-
-            <div className="mobile-brand">
-              <div className="mob-logo">🔐</div>
-              <div className="mob-name">منصة يلاّ</div>
-            </div>
-
             <div className="card-title">{isLogin ? 'مرحباً بعودتك' : 'إنشاء حساب جديد'}</div>
             <div className="card-sub">{isLogin ? 'سجّل دخولك للمتابعة' : 'انضم إلى منصة يلاّ اليوم'}</div>
 
@@ -302,11 +282,10 @@ export default function AuthPage() {
             )}
 
             <form onSubmit={isLogin ? handleLogin : handleRegister} className="form">
-
               {!isLogin && (
                 <>
                   <div className="fg">
-                    <label className="lbl">الاسم الكامل</label>
+                    <label className="lbl">الاسم الثلاثي</label>
                     <div className="iw"><span className="iico">👤</span>
                       <input className="inp" type="text" placeholder="الاسم الكامل" required
                         value={formData.fullName} onChange={field('fullName')} />
@@ -363,7 +342,7 @@ export default function AuthPage() {
 
             <div className="flink">
               {isLogin
-                ? <>ليس لديك حساب؟ <span onClick={() => switchView(false)}>أنشئ واحداً الآن</span></>
+                ? <>ليس لديك حساب؟ <span onClick={() => switchView(false)}>أنشئ حسابك الآن</span></>
                 : <>لديك حساب بالفعل؟ <span onClick={() => switchView(true)}>قم بتسجيل الدخول</span></>}
             </div>
 
@@ -371,10 +350,12 @@ export default function AuthPage() {
               <div className="rh-row"><span>👤 مستخدم</span><span className="rh-arrow">←</span><span>/user</span></div>
               <div className="rh-row"><span>🔧 ميكانيكي</span><span className="rh-arrow">←</span><span>/mechanics</span></div>
             </div>
-
           </div>
         </div>
       </div>
     </>
   );
 }
+//git add .
+//git commit  -m "zaid fix"
+// git push
