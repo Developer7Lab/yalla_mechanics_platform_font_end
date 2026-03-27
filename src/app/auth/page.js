@@ -37,11 +37,11 @@ export default function AuthPage() {
     }
   }, [router]);
 
-  // دالة للتحقق من صحة البريد الإلكتروني
-  const isValidEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
+const isValidEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.(?!com$)[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
 
   const authFetch = useCallback(async (path, options = {}, tok = '') => {
     const headers = { 'Content-Type': 'application/json' };
