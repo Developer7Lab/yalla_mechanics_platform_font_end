@@ -537,7 +537,7 @@ const MyBreakdownsPage = ({ api, accessToken, setToast, onNew, onViewProposals, 
 
   const openPdf = (b) => {
     if (!b.reportPdf?.path) return;
-    const url = `${API_BASE_URL}${b.reportPdf.path}`;
+const url = `${API_BASE_URL}/public${b.reportPdf.path}`;
     setPdfModal({ url });
   };
 
