@@ -671,78 +671,145 @@ const ReportPage = ({ api, accessToken, breakdown, setToast, onDone }) => {
   const totalParts = form.spareParts.reduce((s,p)=>s+(p.quantity*p.price),0);
   const grandTotal = form.finalPrice ? Number(form.finalPrice) : totalParts;
 
-  const generatePdf = async () => {
-    if (!window.jspdf) {
-      await new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
-    }
+ const generatePdf = async () => {
+  // تحميل المكتبات المطلوبة
+  if (!window.html2canvas) {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+  if (!window.jspdf) {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+
+  const car = breakdown.carInfo || {};
+  const validParts = form.spareParts.filter(p => p.name.trim());
+  const total = form.finalPrice ? Number(form.finalPrice) : totalParts;
+
+  // إنشاء عنصر HTML مؤقت بخط عربي
+  const container = document.createElement('div');
+  container.style.cssText = `
+    position: fixed; top: -9999px; left: -9999px;
+    width: 794px; background: #fff; font-family: 'Tajawal', 'Arial', sans-serif;
+    direction: rtl; color: #1a1a2e; padding: 0;
+  `;
+
+  container.innerHTML = `
+    <div style="background: linear-gradient(135deg,#1e82e6,#0f4fa8); padding: 32px 40px; color: #fff;">
+      <div style="font-size: 26px; font-weight: 900; margin-bottom: 4px;">تقرير الإصلاح</div>
+      <div style="font-size: 13px; opacity: .75;">AutoCare Platform — ${new Date().toLocaleDateString('ar-SA')}</div>
+    </div>
+
+    <div style="padding: 32px 40px;">
+
+      <div style="background: #f0f4ff; border-right: 4px solid #1e82e6; border-radius: 10px; padding: 16px 20px; margin-bottom: 24px;">
+        <div style="font-size: 13px; font-weight: 700; color: #555; margin-bottom: 8px;">معلومات السيارة</div>
+        <div style="font-size: 18px; font-weight: 900; color: #1a1a2e;">${car.brand || '—'} ${car.model || ''} ${car.year ? `(${car.year})` : ''}</div>
+        <div style="font-size: 13px; color: #666; margin-top: 4px;">
+          ${car.fuelType ? `الوقود: ${car.fuelType}` : ''}
+          ${car.transmission ? ` &nbsp;|&nbsp; ناقل الحركة: ${car.transmission}` : ''}
+          ${car.mileage ? ` &nbsp;|&nbsp; الكيلومترات: ${car.mileage.toLocaleString()} كم` : ''}
+        </div>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <div style="font-size: 14px; font-weight: 700; color: #1e82e6; border-bottom: 2px solid #1e82e6; padding-bottom: 6px; margin-bottom: 10px;">المشكلة</div>
+        <div style="font-size: 14px; color: #333; line-height: 1.7;">${breakdown.title || '—'}</div>
+        ${breakdown.description ? `<div style="font-size: 13px; color: #555; margin-top: 6px; line-height: 1.7;">${breakdown.description}</div>` : ''}
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <div style="font-size: 14px; font-weight: 700; color: #10b981; border-bottom: 2px solid #10b981; padding-bottom: 6px; margin-bottom: 10px;">ملخص الحل</div>
+        <div style="font-size: 14px; color: #333; line-height: 1.7;">${form.solutionSummary}</div>
+      </div>
+
+      ${validParts.length > 0 ? `
+      <div style="margin-bottom: 24px;">
+        <div style="font-size: 14px; font-weight: 700; color: #f59e0b; border-bottom: 2px solid #f59e0b; padding-bottom: 6px; margin-bottom: 10px;">قطع الغيار المستخدمة</div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <thead>
+            <tr style="background: #1e82e6; color: #fff;">
+              <th style="padding: 10px 14px; text-align: right; border-radius: 4px 0 0 4px;">اسم القطعة</th>
+              <th style="padding: 10px 14px; text-align: center;">الكمية</th>
+              <th style="padding: 10px 14px; text-align: center;">سعر الوحدة</th>
+              <th style="padding: 10px 14px; text-align: center; border-radius: 0 4px 4px 0;">الإجمالي</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${validParts.map((p, i) => `
+              <tr style="background: ${i % 2 === 0 ? '#f8f9fa' : '#fff'};">
+                <td style="padding: 9px 14px; color: #1a1a2e; font-weight: 600;">${p.name}</td>
+                <td style="padding: 9px 14px; text-align: center; color: #555;">${p.quantity}</td>
+                <td style="padding: 9px 14px; text-align: center; color: #555;">${p.price} ${form.currency}</td>
+                <td style="padding: 9px 14px; text-align: center; font-weight: 700; color: #1a1a2e;">${(p.quantity * p.price).toFixed(2)} ${form.currency}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <div style="text-align: left; margin-top: 8px; font-size: 13px; color: #666;">
+          مجموع القطع: <strong style="color: #f59e0b;">${totalParts.toFixed(2)} ${form.currency}</strong>
+        </div>
+      </div>
+      ` : ''}
+
+      <div style="background: linear-gradient(135deg,#1e82e6,#0f4fa8); border-radius: 12px; padding: 20px 28px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="color: rgba(255,255,255,.8); font-size: 15px; font-weight: 600;">إجمالي الفاتورة</div>
+        <div style="color: #fbbf24; font-size: 26px; font-weight: 900;">${total.toFixed(2)} ${form.currency}</div>
+      </div>
+
+      ${form.mechanicNotes.trim() ? `
+      <div>
+        <div style="font-size: 14px; font-weight: 700; color: #888; border-bottom: 2px solid #ddd; padding-bottom: 6px; margin-bottom: 10px;">ملاحظات الميكانيكي</div>
+        <div style="font-size: 13px; color: #555; line-height: 1.7; padding: 12px 16px; background: #f8f9fa; border-radius: 8px; border-right: 3px solid #ccc;">${form.mechanicNotes}</div>
+      </div>
+      ` : ''}
+
+    </div>
+
+    <div style="background: #1e82e6; color: rgba(255,255,255,.8); text-align: center; padding: 14px; font-size: 12px;">
+      AutoCare Platform — تقرير الإصلاح المهني
+    </div>
+  `;
+
+  document.body.appendChild(container);
+
+  try {
+    const canvas = await window.html2canvas(container, {
+      scale: 1.5,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+    });
+
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
-    const W=210, margin=18;
-    let y=20;
+const imgData = canvas.toDataURL('image/jpeg', 0.85);
+    const pdfWidth = 210; // A4 mm
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-    const color = { primary:[30,130,230], dark:[20,20,35], gray:[100,110,130], light:[240,242,246], white:[255,255,255], green:[16,185,129], amber:[245,158,11] };
-    const rect = (x,yy,w,h,r)=>{ doc.setFillColor(...r); doc.rect(x,yy,w,h,'F'); };
-    const txt  = (t,x,yy,sz,c,bold=false,align='left')=>{ doc.setFont('helvetica',bold?'bold':'normal'); doc.setFontSize(sz); doc.setTextColor(...c); doc.text(String(t),x,yy,{align}); };
-    const line = (x1,y1,x2,y2,c,w=0.3)=>{ doc.setDrawColor(...c); doc.setLineWidth(w); doc.line(x1,y1,x2,y2); };
+    const doc = new jsPDF({
+      orientation: pdfHeight > pdfWidth ? 'portrait' : 'landscape',
+      unit: 'mm',
+      format: [pdfWidth, pdfHeight],
+    });
 
-    rect(0,0,W,38,color.primary);
-    txt('Repair Report',W/2,15,20,color.white,true,'center');
-    txt('AutoCare Platform',W/2,23,9,[180,220,255],false,'center');
-    txt(`Date: ${new Date().toLocaleDateString('en-GB')}`,W-margin,32,8,[200,230,255],false,'right');
-    y=48;
+doc.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
 
-    const car=breakdown.carInfo||{};
-    rect(margin,y,W-margin*2,22,color.light);
-    doc.setDrawColor(...color.primary); doc.setLineWidth(0.4); doc.rect(margin,y,W-margin*2,22);
-    rect(margin,y,3,22,color.primary);
-    txt('Vehicle Information',margin+6,y+6,10,color.dark,true);
-    txt(`${car.brand||'-'} ${car.model||''} (${car.year||'-'})`,margin+6,y+12,9,color.gray);
-    txt(`Fuel: ${car.fuelType||'-'}   Transmission: ${car.transmission||'-'}   KM: ${car.mileage?.toLocaleString()||'-'}`,margin+6,y+18,8,color.gray);
-    y+=28;
-
-    txt('Problem',margin,y,11,color.dark,true);
-    line(margin,y+2,W-margin,y+2,color.primary,0.4); y+=8;
-    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...color.gray);
-    const titleLines=doc.splitTextToSize(breakdown.title||'-',W-margin*2);
-    doc.text(titleLines,margin,y); y+=titleLines.length*5+4;
-
-    txt('Solution Summary',margin,y,11,color.dark,true);
-    line(margin,y+2,W-margin,y+2,color.green,0.4); y+=8;
-    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...color.gray);
-    const solLines=doc.splitTextToSize(form.solutionSummary||'-',W-margin*2);
-    doc.text(solLines,margin,y); y+=solLines.length*5+6;
-
-    const validParts=form.spareParts.filter(p=>p.name.trim());
-    if (validParts.length>0) {
-      txt('Spare Parts',margin,y,11,color.dark,true);
-      line(margin,y+2,W-margin,y+2,color.amber,0.4); y+=7;
-      const cols={name:margin,qty:margin+80,price:margin+105,total:margin+140};
-      rect(margin,y,W-margin*2,8,color.primary);
-      ['Part Name','Qty','Unit Price','Total'].forEach((h,i)=>{ txt(h,[cols.name,cols.qty,cols.price,cols.total][i]+2,y+5.5,8,color.white,true); }); y+=8;
-      validParts.forEach((p,idx)=>{ const rowBg=idx%2===0?color.white:color.light; rect(margin,y,W-margin*2,7,rowBg); txt(p.name,cols.name+2,y+5,8,color.dark); txt(String(p.quantity),cols.qty+2,y+5,8,color.gray); txt(`${p.price} ${form.currency}`,cols.price+2,y+5,8,color.gray); txt(`${(p.quantity*p.price).toFixed(2)} ${form.currency}`,cols.total+2,y+5,8,color.dark,true); y+=7; });
-      rect(margin,y,W-margin*2,7,color.light); txt('Parts Subtotal',cols.name+2,y+5,8,color.dark,true); txt(`${totalParts.toFixed(2)} ${form.currency}`,cols.total+2,y+5,8,color.dark,true); y+=10;
-    }
-
-    rect(margin,y,W-margin*2,16,color.primary);
-    txt('Total Price',margin+6,y+10,12,color.white,true);
-    txt(`${grandTotal.toFixed(2)} ${form.currency}`,W-margin-4,y+10,14,color.amber,true,'right');
-    y+=22;
-
-    if (form.mechanicNotes.trim()) {
-      txt('Mechanic Notes',margin,y,11,color.dark,true);
-      line(margin,y+2,W-margin,y+2,color.gray,0.3); y+=8;
-      doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...color.gray);
-      const noteLines=doc.splitTextToSize(form.mechanicNotes,W-margin*2);
-      doc.text(noteLines,margin,y); y+=noteLines.length*5+6;
-    }
-
-    rect(0,285,W,12,color.primary);
-    txt('AutoCare Platform — Professional Repair Report',W/2,293,8,[180,220,255],false,'center');
-
-    const blob=doc.output('blob');
-    const url=URL.createObjectURL(blob);
-    setPdfBlob(blob); setPdfUrl(url); setStep(2);
-  };
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    setPdfBlob(blob);
+    setPdfUrl(url);
+    setStep(2);
+  } finally {
+    document.body.removeChild(container);
+  }
+};
 
   const submitReport = async () => {
     if (!pdfBlob) { setToast({ type:'error', text:'يرجى توليد الـ PDF أولاً' }); return; }
