@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAccessToken } from '../useAccessToken';
+import jsPDF from 'jspdf';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 const API_BASE =`${API_BASE_URL}/api/users`;
@@ -112,9 +113,91 @@ const MechanicDetailModal = ({ mechanic, onClose }) => {
   );
 };
 
-/* ─── PDF Viewer Modal ─── */
-const PdfViewerModal = ({ pdfUrl, onClose }) => {
-  if (!pdfUrl) return null;
+/* ─── PDF Viewer Modal — يولّد PDF من JSON باستخدام jsPDF ─── */
+const PdfViewerModal = ({ reportData, onClose }) => {
+  const [pdfUrl, setPdfUrl] = useState(null);
+
+  useEffect(() => {
+    if (!reportData) return;
+
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(16);
+
+    // العنوان
+    doc.text('Repair Report / تقرير الإصلاح', 105, 20, { align: 'center' });
+
+    doc.setFontSize(12);
+    let y = 40;
+
+    // ملخص الحل
+    doc.text('Solution Summary:', 20, y);
+    y += 7;
+    const summaryLines = doc.splitTextToSize(reportData.solutionSummary || '-', 170);
+    doc.setFontSize(10);
+    doc.text(summaryLines, 20, y);
+    y += summaryLines.length * 5 + 10;
+
+    doc.setFontSize(12);
+
+    // قطع الغيار
+    if (reportData.spareParts && reportData.spareParts.length > 0) {
+      doc.text('Spare Parts:', 20, y);
+      y += 7;
+      doc.setFontSize(10);
+      reportData.spareParts.forEach((part, i) => {
+        doc.text(
+          `${i + 1}. ${part.name} — Qty: ${part.quantity} — Price: ${part.price} ${reportData.currency}`,
+          25,
+          y
+        );
+        y += 6;
+      });
+      y += 5;
+    }
+
+    doc.setFontSize(12);
+
+    // السعر النهائي
+    doc.text(
+      `Final Price: ${reportData.finalPrice} ${reportData.currency}`,
+      20,
+      y
+    );
+    y += 10;
+
+    // ملاحظات الميكانيكي
+    if (reportData.mechanicNotes) {
+      doc.text('Mechanic Notes:', 20, y);
+      y += 7;
+      const notesLines = doc.splitTextToSize(reportData.mechanicNotes, 170);
+      doc.setFontSize(10);
+      doc.text(notesLines, 20, y);
+      y += notesLines.length * 5 + 5;
+    }
+
+    // تاريخ التقرير
+    doc.setFontSize(9);
+    doc.text(
+      `Submitted: ${new Date(reportData.submittedAt).toLocaleString('en')}`,
+      20,
+      y
+    );
+
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    setPdfUrl(url);
+
+    return () => URL.revokeObjectURL(url);
+  }, [reportData]);
+
+  if (!reportData || !pdfUrl) return null;
+
   return (
     <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,.85)', backdropFilter:'blur(10px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
       <div style={{ background:'#0f1117', border:'1px solid rgba(255,255,255,.12)', borderRadius:20, padding:'1.5rem', width:'100%', maxWidth:780, maxHeight:'92vh', display:'flex', flexDirection:'column', animation:'up .25s ease' }} onClick={e=>e.stopPropagation()}>
@@ -519,11 +602,11 @@ const PostBreakdownPage = ({ accessToken, setToast, onDone }) => {
   );
 };
 
-/* ─── My Breakdowns — with PDF viewer + review button for resolved ─── */
+/* ─── My Breakdowns — يفتح PDF من reportData (JSON) بدل ملف من السيرفر ─── */
 const MyBreakdownsPage = ({ api, accessToken, setToast, onNew, onViewProposals, onWriteReview }) => {
   const [breakdowns, setBreakdowns] = useState([]);
   const [loading, setLoading]       = useState(true);
-  const [pdfModal, setPdfModal]     = useState(null); // { url }
+  const [pdfModal, setPdfModal]     = useState(null); // { reportData }
 
   const load = useCallback(() => {
     setLoading(true);
@@ -536,9 +619,8 @@ const MyBreakdownsPage = ({ api, accessToken, setToast, onNew, onViewProposals, 
   useEffect(() => { load(); }, [load]);
 
   const openPdf = (b) => {
-    if (!b.reportPdf?.path) return;
-const url = `${API_BASE_URL}/public${b.reportPdf.path}`;
-    setPdfModal({ url });
+    if (!b.reportData) return;
+    setPdfModal({ reportData: b.reportData });
   };
 
   return (
@@ -563,7 +645,7 @@ const url = `${API_BASE_URL}/public${b.reportPdf.path}`;
             {breakdowns.map(b => {
               const hasProposals = (b.proposalCount||0) > 0;
               const isResolved   = b.status === 'resolved';
-              const hasPdf       = !!b.reportPdf?.path;
+              const hasReport    = !!b.reportData; // ✅ تحقق من وجود reportData
 
               return (
                 <div key={b._id} className="bd-card">
@@ -596,7 +678,7 @@ const url = `${API_BASE_URL}/public${b.reportPdf.path}`;
                   {/* ─── Resolved: PDF + Review ─── */}
                   {isResolved && (
                     <div style={{ display:'flex', gap:'.7rem', margin:'.8rem 0', flexWrap:'wrap' }}>
-                      {hasPdf && (
+                      {hasReport && (
                         <button className="btn-pdf" onClick={() => openPdf(b)}>
                           📄 عرض تقرير الإصلاح
                         </button>
@@ -631,8 +713,8 @@ const url = `${API_BASE_URL}/public${b.reportPdf.path}`;
           </div>
         )}
 
-      {/* PDF Modal */}
-      {pdfModal && <PdfViewerModal pdfUrl={pdfModal.url} onClose={() => setPdfModal(null)}/>}
+      {/* PDF Modal — يولّد PDF من reportData */}
+      {pdfModal && <PdfViewerModal reportData={pdfModal.reportData} onClose={() => setPdfModal(null)}/>}
     </div>
   );
 };
@@ -867,7 +949,7 @@ export default function UserDashboard() {
         .btn-complete:disabled{opacity:.5;cursor:not-allowed}
         .btn-pdf{padding:.5rem 1rem;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.3);border-radius:10px;color:#a78bfa;font-family:'Tajawal',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem}
         .btn-pdf:hover{background:rgba(167,139,250,.25)}
-        .btn-review{padding:.5rem 1rem;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);border-radius:10px;color:#fbbf24;font-family:'Tajawal',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem}
+        .btn-review{padding:.5rem 1rem;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);border-radius:10px;color:#fbbf24;font-family:'Tajawal',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.4444rem}
         .btn-review:hover{background:rgba(245,158,11,.22)}
         .profile-avatar-row{display:flex;align-items:center;gap:1.2rem;margin-bottom:1.8rem;padding-bottom:1.4rem;border-bottom:1px solid rgba(255,255,255,.07)}
         .big-avatar{width:64px;height:64px;background:linear-gradient(135deg,#0ea5e9,#6366f1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0}
