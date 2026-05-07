@@ -73,6 +73,7 @@ export default function UserProfilePage() {
   return (
     <div style={pageStyle}>
       <button onClick={() => router.back()} style={backBtnStyle}>← رجوع</button>
+      
 
       {/* Hero Card */}
       <div style={heroCardStyle}>

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useAccessToken } from '../useAccessToken';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import FloatingChatbot from '../userprofile/FloatingChatbot';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 const API_BASE = `${API_BASE_URL}/api/users`;
@@ -975,6 +976,7 @@ export default function UserDashboard() {
 
       <div className="layout">
         <nav className="sidebar">
+
           <div className="sidebar-brand"><div className="sb-icon">🚗</div><div className="sb-name">AutoCare</div></div>
           {user&&<div className="user-mini"><div className="um-av">👤</div><div><div className="um-name">{user.fullName}</div><div className="um-role">مستخدم</div></div></div>}
           {navItems.map(n=>(
@@ -988,6 +990,8 @@ export default function UserDashboard() {
             </button>
           </div>
         </nav>
+      <FloatingChatbot />
+
         <main className="main">{renderPage()}</main>
       </div>
       <Toast msg={toast} onClose={()=>setToastState({type:'',text:''})}/>
