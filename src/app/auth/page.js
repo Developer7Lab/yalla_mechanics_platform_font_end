@@ -112,8 +112,8 @@ export default function AuthPage() {
 
   if (!mounted || checking) {
     return (
-      <div style={{ minHeight: '100vh', background: '#080a10', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ width: 32, height: 32, border: '3px solid rgba(255,255,255,.15)', borderTopColor: '#e53e1a', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
+      <div style={{ minHeight: '100vh', background: '#0a0a0f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 32, height: 32, border: '3px solid rgba(26,106,255,.15)', borderTopColor: '#1a6aff', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     );
@@ -125,7 +125,7 @@ export default function AuthPage() {
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=Sora:wght@400;600;700;800&display=swap');
 
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        html,body{font-family:'Tajawal',sans-serif;direction:rtl;background:#080a10;color:#e2e8f0;min-height:100vh}
+        html,body{font-family:'Tajawal',sans-serif;direction:rtl;background:#0a0a0f;color:#e0eeff;min-height:100vh}
 
         @keyframes fadeUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
         @keyframes rot{to{transform:rotate(360deg)}}
@@ -150,24 +150,24 @@ export default function AuthPage() {
         /* ── BACKGROUND SCENE ── */
         .bg-scene{
           position:fixed;inset:0;z-index:0;
-          background:linear-gradient(180deg,#050608 0%,#0a0c15 30%,#0d0e18 60%,#080a0f 100%);
+          background:radial-gradient(ellipse at 30% 60%, #0d1a3a 0%, #070a1a 50%, #020408 100%);
           overflow:hidden;
         }
 
         /* Road */
         .road{
           position:absolute;bottom:0;left:0;right:0;height:38%;
-          background:linear-gradient(180deg,#0f1117 0%,#141720 40%,#1a1d28 100%);
+          background:linear-gradient(180deg,#050d20 0%,#030810 40%,#020608 100%);
           clip-path:polygon(0 25%,100% 0%,100% 100%,0 100%);
         }
         .road-line{
           position:absolute;height:3px;border-radius:2px;
-          background:linear-gradient(90deg,transparent,rgba(255,90,20,.7),transparent);
+          background:linear-gradient(90deg,transparent,rgba(26,106,255,.7),transparent);
           animation:speed-line 1.8s linear infinite;
         }
         .road-line.fast{
           animation:speed-line-fast .28s linear infinite !important;
-          background:linear-gradient(90deg,transparent,rgba(255,160,50,.95),transparent) !important;
+          background:linear-gradient(90deg,transparent,rgba(0,170,255,.95),transparent) !important;
         }
         .road-line:nth-child(1){width:180px;bottom:14%;left:70%;animation-delay:0s}
         .road-line:nth-child(2){width:240px;bottom:20%;left:55%;animation-delay:.4s}
@@ -178,7 +178,7 @@ export default function AuthPage() {
         .road-divider{
           position:absolute;bottom:0;left:50%;transform:translateX(-50%);
           width:6px;height:38%;
-          background:repeating-linear-gradient(180deg,rgba(255,90,20,.6) 0px,rgba(255,90,20,.6) 30px,transparent 30px,transparent 60px);
+          background:repeating-linear-gradient(180deg,rgba(26,106,255,.6) 0px,rgba(26,106,255,.6) 30px,transparent 30px,transparent 60px);
           clip-path:polygon(30% 20%,70% 20%,100% 100%,0% 100%);
           opacity:.4;
         }
@@ -186,13 +186,13 @@ export default function AuthPage() {
         .city{
           position:absolute;bottom:37%;left:0;right:0;height:180px;
           background:
-            linear-gradient(180deg,transparent 0%,transparent 60%,#0d0f18 100%),
+            linear-gradient(180deg,transparent 0%,transparent 60%,#070a1a 100%),
             repeating-linear-gradient(90deg,
-              #0d0f18 0px,#0d0f18 18px,transparent 18px,transparent 22px,
-              #0d0f18 22px,#0d0f18 48px,transparent 48px,transparent 52px,
-              #0d0f18 52px,#0d0f18 62px,transparent 62px,transparent 66px,
-              #0d0f18 66px,#0d0f18 90px,transparent 90px,transparent 95px,
-              #0d0f18 95px,#0d0f18 110px,transparent 110px,transparent 115px
+              #070a1a 0px,#070a1a 18px,transparent 18px,transparent 22px,
+              #070a1a 22px,#070a1a 48px,transparent 48px,transparent 52px,
+              #070a1a 52px,#070a1a 62px,transparent 62px,transparent 66px,
+              #070a1a 66px,#070a1a 90px,transparent 90px,transparent 95px,
+              #070a1a 95px,#070a1a 110px,transparent 110px,transparent 115px
             );
           opacity:.7;
         }
@@ -200,21 +200,21 @@ export default function AuthPage() {
         .windows{
           position:absolute;bottom:37%;left:0;right:0;height:160px;
           background:
-            radial-gradient(circle 1px at 60px 40px,rgba(255,200,60,.6) 0%,transparent 3px),
-            radial-gradient(circle 1px at 120px 60px,rgba(255,200,60,.4) 0%,transparent 3px),
-            radial-gradient(circle 1px at 200px 30px,rgba(255,150,50,.5) 0%,transparent 3px),
-            radial-gradient(circle 1px at 280px 50px,rgba(255,200,60,.6) 0%,transparent 3px),
-            radial-gradient(circle 1px at 350px 25px,rgba(255,200,60,.3) 0%,transparent 3px),
-            radial-gradient(circle 1px at 430px 70px,rgba(255,200,60,.5) 0%,transparent 3px),
-            radial-gradient(circle 1px at 500px 40px,rgba(255,150,50,.4) 0%,transparent 3px),
-            radial-gradient(circle 1px at 580px 55px,rgba(255,200,60,.6) 0%,transparent 3px),
-            radial-gradient(circle 1px at 650px 30px,rgba(255,200,60,.4) 0%,transparent 3px),
-            radial-gradient(circle 1px at 720px 65px,rgba(255,150,50,.5) 0%,transparent 3px),
-            radial-gradient(circle 1px at 800px 35px,rgba(255,200,60,.6) 0%,transparent 3px),
-            radial-gradient(circle 1px at 880px 50px,rgba(255,200,60,.3) 0%,transparent 3px),
-            radial-gradient(circle 1px at 950px 42px,rgba(255,150,50,.5) 0%,transparent 3px),
-            radial-gradient(circle 1px at 1030px 28px,rgba(255,200,60,.6) 0%,transparent 3px),
-            radial-gradient(circle 1px at 1100px 60px,rgba(255,200,60,.4) 0%,transparent 3px);
+            radial-gradient(circle 1px at 60px 40px,rgba(0,170,255,.6) 0%,transparent 3px),
+            radial-gradient(circle 1px at 120px 60px,rgba(26,106,255,.4) 0%,transparent 3px),
+            radial-gradient(circle 1px at 200px 30px,rgba(74,159,255,.5) 0%,transparent 3px),
+            radial-gradient(circle 1px at 280px 50px,rgba(0,170,255,.6) 0%,transparent 3px),
+            radial-gradient(circle 1px at 350px 25px,rgba(26,106,255,.3) 0%,transparent 3px),
+            radial-gradient(circle 1px at 430px 70px,rgba(0,170,255,.5) 0%,transparent 3px),
+            radial-gradient(circle 1px at 500px 40px,rgba(74,159,255,.4) 0%,transparent 3px),
+            radial-gradient(circle 1px at 580px 55px,rgba(0,170,255,.6) 0%,transparent 3px),
+            radial-gradient(circle 1px at 650px 30px,rgba(26,106,255,.4) 0%,transparent 3px),
+            radial-gradient(circle 1px at 720px 65px,rgba(74,159,255,.5) 0%,transparent 3px),
+            radial-gradient(circle 1px at 800px 35px,rgba(0,170,255,.6) 0%,transparent 3px),
+            radial-gradient(circle 1px at 880px 50px,rgba(26,106,255,.3) 0%,transparent 3px),
+            radial-gradient(circle 1px at 950px 42px,rgba(74,159,255,.5) 0%,transparent 3px),
+            radial-gradient(circle 1px at 1030px 28px,rgba(0,170,255,.6) 0%,transparent 3px),
+            radial-gradient(circle 1px at 1100px 60px,rgba(26,106,255,.4) 0%,transparent 3px);
           background-size:1200px 160px;
           animation:flicker 5s ease infinite;
         }
@@ -239,9 +239,9 @@ export default function AuthPage() {
             radial-gradient(circle 1px at 82% 44%,rgba(255,255,255,.4) 0%,transparent 2px);
         }
 
-        .glow-red{position:absolute;width:500px;height:300px;background:radial-gradient(ellipse,rgba(220,40,20,.18) 0%,transparent 70%);bottom:28%;left:-100px;pointer-events:none;}
-        .glow-orange{position:absolute;width:400px;height:200px;background:radial-gradient(ellipse,rgba(255,100,10,.12) 0%,transparent 70%);bottom:32%;right:0;pointer-events:none;}
-        .glow-top{position:absolute;width:800px;height:400px;background:radial-gradient(ellipse,rgba(180,20,10,.08) 0%,transparent 70%);top:-100px;left:50%;transform:translateX(-50%);pointer-events:none;}
+        .glow-blue{position:absolute;width:500px;height:300px;background:radial-gradient(ellipse,rgba(26,106,255,.18) 0%,transparent 70%);bottom:28%;left:-100px;pointer-events:none;}
+        .glow-cyan{position:absolute;width:400px;height:200px;background:radial-gradient(ellipse,rgba(0,170,255,.12) 0%,transparent 70%);bottom:32%;right:0;pointer-events:none;}
+        .glow-top{position:absolute;width:800px;height:400px;background:radial-gradient(ellipse,rgba(10,32,96,.08) 0%,transparent 70%);top:-100px;left:50%;transform:translateX(-50%);pointer-events:none;}
 
         .scanline{
           position:absolute;inset:0;pointer-events:none;
@@ -249,24 +249,22 @@ export default function AuthPage() {
           z-index:1;
         }
 
-        /* ── السيارة — أكبر بـ ~5 مرات ── */
+        /* ── السيارة ── */
         .car-wrap{
           position:absolute;bottom:9%;left:0;width:100%;
           pointer-events:none;z-index:2;
           display:flex;justify-content:center;
         }
-        /* حالة الانطلاق */
         .car-wrap.driving{
           animation:car-launch 1.8s cubic-bezier(.25,0,.1,1) forwards;
         }
         .race-car{
-          /* ~5x: الأصل كان min(520px,70vw) → الآن min(900px,95vw) */
           width:min(900px,95vw);
-          filter:drop-shadow(0 0 40px rgba(230,50,10,.65)) drop-shadow(0 0 12px rgba(255,100,20,.5));
+          filter:drop-shadow(0 0 40px rgba(26,106,255,.65)) drop-shadow(0 0 12px rgba(0,170,255,.5));
           transition:filter .3s;
         }
         .car-wrap.driving .race-car{
-          filter:drop-shadow(0 0 70px rgba(255,100,10,.95)) drop-shadow(0 0 25px rgba(255,200,50,.7));
+          filter:drop-shadow(0 0 70px rgba(0,170,255,.95)) drop-shadow(0 0 25px rgba(122,184,255,.7));
         }
 
         /* أشعة المصابيح */
@@ -277,13 +275,13 @@ export default function AuthPage() {
         }
         .beam-left{
           right:calc(50% + min(300px,40vw));
-          background:linear-gradient(270deg,rgba(255,220,120,.25) 0%,transparent 90%);
+          background:linear-gradient(270deg,rgba(122,184,255,.25) 0%,transparent 90%);
           clip-path:polygon(100% 0%,100% 100%,0% 70%,0% 30%);
           transform:skewX(-10deg);
         }
         .beam-right{
           left:calc(50% + min(300px,40vw));
-          background:linear-gradient(90deg,rgba(255,220,120,.25) 0%,transparent 90%);
+          background:linear-gradient(90deg,rgba(122,184,255,.25) 0%,transparent 90%);
           clip-path:polygon(0% 0%,0% 100%,100% 70%,100% 30%);
           transform:skewX(10deg);
         }
@@ -298,67 +296,67 @@ export default function AuthPage() {
         /* ── CARD ── */
         .card{
           width:100%;max-width:420px;position:relative;z-index:10;
-          background:rgba(8,10,18,.82);border:1px solid rgba(220,60,10,.28);
+          background:rgba(8,14,30,.88);border:1px solid rgba(26,106,255,.28);
           border-radius:24px;padding:2.2rem 2rem;
           backdrop-filter:blur(24px);
           animation:fadeUp .6s cubic-bezier(.16,1,.3,1) both;
-          box-shadow:0 0 0 1px rgba(220,60,10,.1),0 20px 60px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,100,30,.12);
+          box-shadow:0 0 0 1px rgba(26,106,255,.1),0 20px 60px rgba(0,0,0,.6),inset 0 1px 0 rgba(0,170,255,.12);
         }
         .card::before{
           content:'';position:absolute;top:0;left:10%;right:10%;height:2px;
-          background:linear-gradient(90deg,transparent,#e53e1a,#ff6b1a,#e53e1a,transparent);
+          background:linear-gradient(90deg,transparent,#1a6aff,#00aaff,#1a6aff,transparent);
           border-radius:0 0 4px 4px;
         }
 
         .brand-row{display:flex;align-items:center;gap:.6rem;margin-bottom:1.5rem;}
-        .brand-icon{width:38px;height:38px;background:linear-gradient(135deg,#e53e1a,#ff6b1a);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;box-shadow:0 0 16px rgba(229,62,26,.5);flex-shrink:0;}
-        .brand-name{font-family:'Sora',sans-serif;font-size:1.1rem;font-weight:800;background:linear-gradient(90deg,#ff6b1a,#ffd54f);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-        .brand-tag{font-size:.7rem;color:rgba(255,107,26,.5);font-weight:500;letter-spacing:.05em}
+        .brand-icon{width:38px;height:38px;background:linear-gradient(135deg,#0a2060,#1a6aff);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;box-shadow:0 0 16px rgba(26,106,255,.5);flex-shrink:0;}
+        .brand-name{font-family:'Sora',sans-serif;font-size:1.1rem;font-weight:800;background:linear-gradient(90deg,#1a6aff,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+        .brand-tag{font-size:.7rem;color:rgba(26,106,255,.5);font-weight:500;letter-spacing:.05em}
 
-        .card-title{font-family:'Sora',sans-serif;font-size:1.45rem;font-weight:800;color:#fff;margin-bottom:.25rem;}
-        .card-sub{font-size:.87rem;color:rgba(255,255,255,.32);margin-bottom:1.6rem}
+        .card-title{font-family:'Sora',sans-serif;font-size:1.45rem;font-weight:800;color:#e0eeff;margin-bottom:.25rem;}
+        .card-sub{font-size:.87rem;color:rgba(160,200,255,.35);margin-bottom:1.6rem}
 
-        .tabs{display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(220,60,10,.15);border-radius:12px;padding:3px;margin-bottom:1.6rem;gap:3px;}
-        .tab{flex:1;padding:.55rem;border:none;border-radius:9px;font-family:'Tajawal',sans-serif;font-size:.9rem;font-weight:500;cursor:pointer;transition:all .22s;background:transparent;color:rgba(255,255,255,.3);}
-        .tab.on{background:linear-gradient(135deg,#c0330f,#e53e1a);color:#fff;font-weight:700;box-shadow:0 3px 14px rgba(229,62,26,.45);}
+        .tabs{display:flex;background:rgba(26,106,255,.04);border:1px solid rgba(26,106,255,.15);border-radius:12px;padding:3px;margin-bottom:1.6rem;gap:3px;}
+        .tab{flex:1;padding:.55rem;border:none;border-radius:9px;font-family:'Tajawal',sans-serif;font-size:.9rem;font-weight:500;cursor:pointer;transition:all .22s;background:transparent;color:rgba(160,200,255,.35);}
+        .tab.on{background:linear-gradient(135deg,#0a2060,#1a5aef,#0a90ff);color:#fff;font-weight:700;box-shadow:0 3px 14px rgba(26,106,255,.45);}
 
         .form{display:flex;flex-direction:column;gap:.8rem}
         .fg{display:flex;flex-direction:column;gap:.28rem}
-        .lbl{font-size:.77rem;font-weight:600;color:rgba(255,255,255,.36);padding-right:2px}
+        .lbl{font-size:.77rem;font-weight:600;color:rgba(160,200,255,.4);padding-right:2px}
         .iw{position:relative}
         .iico{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:.88rem;opacity:.35;pointer-events:none;z-index:1;}
-        .inp{width:100%;padding:.78rem 2.4rem .78rem .9rem;background:rgba(255,255,255,.045);border:1.5px solid rgba(255,255,255,.08);border-radius:12px;color:#fff;font-family:'Tajawal',sans-serif;font-size:.95rem;outline:none;transition:border-color .2s,background .2s,box-shadow .2s;text-align:right;}
-        .inp:focus{border-color:#e53e1a;background:rgba(229,62,26,.08);box-shadow:0 0 0 3px rgba(229,62,26,.15);}
-        .inp::placeholder{color:rgba(255,255,255,.2)}
+        .inp{width:100%;padding:.78rem 2.4rem .78rem .9rem;background:rgba(26,106,255,.05);border:1.5px solid rgba(26,106,255,.12);border-radius:12px;color:#c8e0ff;font-family:'Tajawal',sans-serif;font-size:.95rem;outline:none;transition:border-color .2s,background .2s,box-shadow .2s;text-align:right;}
+        .inp:focus{border-color:#1a6aff;background:rgba(26,106,255,.1);box-shadow:0 0 0 3px rgba(26,106,255,.15);}
+        .inp::placeholder{color:rgba(160,200,255,.2)}
 
         .role-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
-        .role-btn{padding:.65rem .5rem;border-radius:11px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:rgba(255,255,255,.45);font-family:'Tajawal',sans-serif;font-size:.87rem;font-weight:500;cursor:pointer;transition:all .2s;text-align:center;}
-        .role-btn.sel{background:rgba(229,62,26,.15);border-color:rgba(229,62,26,.5);color:#ff8a5b;font-weight:700;}
+        .role-btn{padding:.65rem .5rem;border-radius:11px;border:1.5px solid rgba(26,106,255,.12);background:rgba(26,106,255,.04);color:rgba(160,200,255,.45);font-family:'Tajawal',sans-serif;font-size:.87rem;font-weight:500;cursor:pointer;transition:all .2s;text-align:center;}
+        .role-btn.sel{background:rgba(26,106,255,.15);border-color:rgba(26,106,255,.5);color:#7ab8ff;font-weight:700;}
 
-        .btn-sub{margin-top:.25rem;padding:.88rem;background:linear-gradient(135deg,#c0330f 0%,#e53e1a 50%,#ff5a20 100%);border:none;border-radius:13px;color:#fff;font-family:'Tajawal',sans-serif;font-size:1.05rem;font-weight:700;cursor:pointer;transition:transform .2s,box-shadow .2s,opacity .2s;box-shadow:0 4px 22px rgba(229,62,26,.5);width:100%;display:flex;align-items:center;justify-content:center;gap:.5rem;letter-spacing:.02em;}
-        .btn-sub:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 28px rgba(229,62,26,.65);}
+        .btn-sub{margin-top:.25rem;padding:.88rem;background:linear-gradient(135deg,#0a2060 0%,#1a5aef 50%,#0a90ff 100%);border:none;border-radius:13px;color:#fff;font-family:'Tajawal',sans-serif;font-size:1.05rem;font-weight:700;cursor:pointer;transition:transform .2s,box-shadow .2s,opacity .2s;box-shadow:0 4px 22px rgba(26,106,255,.5);width:100%;display:flex;align-items:center;justify-content:center;gap:.5rem;letter-spacing:.02em;}
+        .btn-sub:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 28px rgba(26,106,255,.65);}
         .btn-sub:disabled{opacity:.5;cursor:not-allowed}
         .btn-sub:active:not(:disabled){transform:translateY(0)}
 
         .spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:rot .65s linear infinite;flex-shrink:0;}
 
         .toast{display:flex;align-items:center;gap:.5rem;padding:.7rem .9rem;border-radius:11px;font-size:.86rem;font-weight:500;margin-bottom:1.1rem;cursor:pointer;animation:toastPop .25s ease;}
-        .t-ok{background:rgba(16,185,129,.1);color:#6ee7b7;border:1px solid rgba(16,185,129,.2)}
-        .t-err{background:rgba(229,62,26,.12);color:#ff9a7a;border:1px solid rgba(229,62,26,.25)}
+        .t-ok{background:rgba(16,185,129,.1);color:#34d399;border:1px solid rgba(16,185,129,.2)}
+        .t-err{background:rgba(26,106,255,.12);color:#7ab8ff;border:1px solid rgba(26,106,255,.25)}
 
-        .flink{text-align:center;margin-top:1rem;font-size:.84rem;color:rgba(255,255,255,.28)}
-        .flink span{color:#ff6b1a;cursor:pointer;font-weight:600;transition:color .2s}
-        .flink span:hover{color:#ff8a4a}
+        .flink{text-align:center;margin-top:1rem;font-size:.84rem;color:rgba(160,200,255,.28)}
+        .flink span{color:#4a9fff;cursor:pointer;font-weight:600;transition:color .2s}
+        .flink span:hover{color:#7ab8ff}
 
-        .redirect-hints{display:flex;flex-direction:column;gap:.4rem;margin-top:1.2rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,.06);}
-        .rh-row{display:flex;align-items:center;gap:.5rem;font-size:.77rem;color:rgba(255,255,255,.25)}
-        .rh-arrow{color:#e53e1a;font-weight:700}
+        .redirect-hints{display:flex;flex-direction:column;gap:.4rem;margin-top:1.2rem;padding-top:1rem;border-top:1px solid rgba(26,106,255,.1);}
+        .rh-row{display:flex;align-items:center;gap:.5rem;font-size:.77rem;color:rgba(160,200,255,.25)}
+        .rh-arrow{color:#1a6aff;font-weight:700}
 
         .stripe-deco{position:absolute;top:12px;left:-1px;display:flex;flex-direction:column;gap:3px;pointer-events:none;}
         .stripe{height:3px;border-radius:0 2px 2px 0;}
-        .stripe:nth-child(1){width:18px;background:#e53e1a;opacity:.8}
-        .stripe:nth-child(2){width:12px;background:#ff6b1a;opacity:.6}
-        .stripe:nth-child(3){width:7px;background:#ffd54f;opacity:.5}
+        .stripe:nth-child(1){width:18px;background:#1a6aff;opacity:.8}
+        .stripe:nth-child(2){width:12px;background:#00aaff;opacity:.6}
+        .stripe:nth-child(3){width:7px;background:#7ab8ff;opacity:.5}
       `}</style>
 
       {/* ── BACKGROUND SCENE ── */}
@@ -375,17 +373,17 @@ export default function AuthPage() {
           <svg className="race-car" viewBox="0 0 520 180" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <radialGradient id="bodyGrad" cx="50%" cy="40%" r="60%">
-                <stop offset="0%" stopColor="#e53e1a"/>
-                <stop offset="60%" stopColor="#b02e0c"/>
-                <stop offset="100%" stopColor="#6b1a06"/>
+                <stop offset="0%" stopColor="#1a6aff"/>
+                <stop offset="60%" stopColor="#0a3a9a"/>
+                <stop offset="100%" stopColor="#061a55"/>
               </radialGradient>
               <radialGradient id="windowGrad" cx="50%" cy="30%" r="70%">
                 <stop offset="0%" stopColor="#9ecfff" stopOpacity=".9"/>
                 <stop offset="100%" stopColor="#0a2040" stopOpacity=".95"/>
               </radialGradient>
               <radialGradient id="tireGrad" cx="40%" cy="35%" r="65%">
-                <stop offset="0%" stopColor="#3a3a3a"/>
-                <stop offset="100%" stopColor="#111"/>
+                <stop offset="0%" stopColor="#1a3060"/>
+                <stop offset="100%" stopColor="#0a1030"/>
               </radialGradient>
             </defs>
 
@@ -395,20 +393,20 @@ export default function AuthPage() {
             {/* دخان العادم عند الانطلاق */}
             {carDriving && (
               <g style={{ animation: 'smoke .45s ease-out infinite' }}>
-                <circle cx="504" cy="127" r="9"  fill="rgba(200,120,50,.4)" />
-                <circle cx="516" cy="121" r="7"  fill="rgba(180,90,30,.3)" />
-                <circle cx="526" cy="116" r="5"  fill="rgba(160,70,20,.2)" />
+                <circle cx="504" cy="127" r="9"  fill="rgba(0,100,255,.4)" />
+                <circle cx="516" cy="121" r="7"  fill="rgba(0,80,200,.3)" />
+                <circle cx="526" cy="116" r="5"  fill="rgba(0,60,160,.2)" />
               </g>
             )}
 
             {/* Front spoiler */}
-            <path d="M60 138 Q50 142 30 145 L40 150 Q70 148 90 142 Z" fill="#8a2a08"/>
-            <rect x="30" y="144" width="40" height="4" rx="2" fill="#e53e1a" opacity=".7"/>
+            <path d="M60 138 Q50 142 30 145 L40 150 Q70 148 90 142 Z" fill="#061a55"/>
+            <rect x="30" y="144" width="40" height="4" rx="2" fill="#1a6aff" opacity=".7"/>
 
             {/* Rear spoiler wing */}
-            <rect x="400" y="85" width="80" height="7" rx="3" fill="#c5330f"/>
-            <rect x="420" y="92" width="8" height="30" rx="2" fill="#8a2a08"/>
-            <rect x="452" y="92" width="8" height="30" rx="2" fill="#8a2a08"/>
+            <rect x="400" y="85" width="80" height="7" rx="3" fill="#0a3a9a"/>
+            <rect x="420" y="92" width="8" height="30" rx="2" fill="#061a55"/>
+            <rect x="452" y="92" width="8" height="30" rx="2" fill="#061a55"/>
 
             {/* Main car body */}
             <path d="M80 140 Q60 138 50 130 Q45 118 60 108
@@ -419,7 +417,7 @@ export default function AuthPage() {
 
             {/* Body highlight stripe */}
             <path d="M130 98 Q200 80 310 78 Q370 78 410 88 L400 82 Q360 72 310 68 L200 70 Q145 78 110 96 Z"
-              fill="rgba(255,150,80,.25)"/>
+              fill="rgba(0,170,255,.25)"/>
 
             {/* Cockpit / windscreen */}
             <path d="M195 95 Q215 68 270 64 L320 64 Q360 66 380 82 L360 95 Q330 82 280 80 Q230 80 210 95 Z"
@@ -427,81 +425,81 @@ export default function AuthPage() {
 
             {/* Roll cage/halo */}
             <path d="M240 92 Q260 76 300 76 Q330 76 345 90"
-              fill="none" stroke="#bbb" strokeWidth="5" strokeLinecap="round"/>
+              fill="none" stroke="#7ab8ff" strokeWidth="5" strokeLinecap="round"/>
             <path d="M240 92 Q260 78 300 78 Q330 78 345 90"
               fill="none" stroke="rgba(255,255,255,.5)" strokeWidth="1.5" strokeLinecap="round"/>
 
             {/* Side intake vents */}
-            <path d="M110 128 L120 118 L145 118 L135 128 Z" fill="#5a1a06" opacity=".9"/>
-            <path d="M112 126 L119 120 L130 120 L124 126 Z" fill="rgba(255,80,20,.3)"/>
+            <path d="M110 128 L120 118 L145 118 L135 128 Z" fill="#061a55" opacity=".9"/>
+            <path d="M112 126 L119 120 L130 120 L124 126 Z" fill="rgba(26,106,255,.3)"/>
 
             {/* Rear diffuser vents */}
-            <path d="M440 128 L448 120 L465 120 L458 128 Z" fill="#5a1a06" opacity=".9"/>
-            <path d="M442 126 L449 122 L460 122 L455 126 Z" fill="rgba(255,80,20,.2)"/>
+            <path d="M440 128 L448 120 L465 120 L458 128 Z" fill="#061a55" opacity=".9"/>
+            <path d="M442 126 L449 122 L460 122 L455 126 Z" fill="rgba(26,106,255,.2)"/>
 
             {/* F1-style nose cone */}
-            <path d="M80 132 Q60 130 40 128 Q28 127 25 132 Q28 138 50 138 L80 138 Z" fill="#9b2d0c"/>
-            <rect x="24" y="130" width="8" height="5" rx="2" fill="#ffcc00" opacity=".9"/>
+            <path d="M80 132 Q60 130 40 128 Q28 127 25 132 Q28 138 50 138 L80 138 Z" fill="#0a2a7a"/>
+            <rect x="24" y="130" width="8" height="5" rx="2" fill="#00aaff" opacity=".9"/>
 
             {/* Racing number plate */}
             <rect x="152" y="108" width="46" height="26" rx="5" fill="#fff" opacity=".92"/>
             <text x="175" y="126" textAnchor="middle" fontFamily="'Sora',sans-serif"
-                  fontSize="16" fontWeight="800" fill="#e53e1a">1</text>
+                  fontSize="16" fontWeight="800" fill="#1a6aff">1</text>
 
             {/* Racing stripes along body */}
-            <path d="M160 140 L440 140" stroke="#ffcc00" strokeWidth="3" opacity=".6" strokeLinecap="round"/>
-            <path d="M170 136 L430 136" stroke="rgba(255,200,0,.25)" strokeWidth="1.5" opacity=".8"/>
+            <path d="M160 140 L440 140" stroke="#00aaff" strokeWidth="3" opacity=".6" strokeLinecap="round"/>
+            <path d="M170 136 L430 136" stroke="rgba(0,170,255,.25)" strokeWidth="1.5" opacity=".8"/>
 
             {/* Front tire */}
             <ellipse cx="140" cy="150" rx="32" ry="22" fill="url(#tireGrad)"/>
-            <ellipse cx="140" cy="150" rx="32" ry="22" fill="none" stroke="#333" strokeWidth="4"/>
-            <ellipse cx="140" cy="150" rx="20" ry="14" fill="#222"/>
-            <ellipse cx="140" cy="150" rx="8"  ry="6"  fill="#444"/>
-            <path d="M127 142 Q135 138 145 140" fill="none" stroke="rgba(255,255,255,.2)" strokeWidth="1.5"/>
+            <ellipse cx="140" cy="150" rx="32" ry="22" fill="none" stroke="#1a3060" strokeWidth="4"/>
+            <ellipse cx="140" cy="150" rx="20" ry="14" fill="#0d1a45"/>
+            <ellipse cx="140" cy="150" rx="8"  ry="6"  fill="#1a3a6a"/>
+            <path d="M127 142 Q135 138 145 140" fill="none" stroke="rgba(0,170,255,.3)" strokeWidth="1.5"/>
 
             {/* Rear tire */}
             <ellipse cx="380" cy="150" rx="34" ry="23" fill="url(#tireGrad)"/>
-            <ellipse cx="380" cy="150" rx="34" ry="23" fill="none" stroke="#333" strokeWidth="4"/>
-            <ellipse cx="380" cy="150" rx="21" ry="15" fill="#222"/>
-            <ellipse cx="380" cy="150" rx="8"  ry="6"  fill="#444"/>
-            <path d="M366 142 Q375 138 386 140" fill="none" stroke="rgba(255,255,255,.2)" strokeWidth="1.5"/>
+            <ellipse cx="380" cy="150" rx="34" ry="23" fill="none" stroke="#1a3060" strokeWidth="4"/>
+            <ellipse cx="380" cy="150" rx="21" ry="15" fill="#0d1a45"/>
+            <ellipse cx="380" cy="150" rx="8"  ry="6"  fill="#1a3a6a"/>
+            <path d="M366 142 Q375 138 386 140" fill="none" stroke="rgba(0,170,255,.3)" strokeWidth="1.5"/>
 
             {/* Brake disc glow */}
             <ellipse cx="140" cy="150" rx="12" ry="8"
-              fill={carDriving ? 'rgba(255,180,20,.4)' : 'rgba(255,120,20,.12)'}/>
+              fill={carDriving ? 'rgba(0,170,255,.4)' : 'rgba(26,106,255,.12)'}/>
             <ellipse cx="380" cy="150" rx="13" ry="9"
-              fill={carDriving ? 'rgba(255,160,20,.35)' : 'rgba(255,120,20,.1)'}/>
+              fill={carDriving ? 'rgba(0,170,255,.35)' : 'rgba(26,106,255,.1)'}/>
 
             {/* Exhaust glow */}
             <ellipse cx="490" cy="132" rx={carDriving ? 20 : 10} ry={carDriving ? 12 : 6}
-              fill="rgba(255,80,10,.3)"/>
+              fill="rgba(26,106,255,.3)"/>
             <ellipse cx="500" cy="132" rx={carDriving ? 14 : 6}  ry={carDriving ? 9 : 4}
-              fill="rgba(255,160,30,.45)"/>
+              fill="rgba(0,170,255,.45)"/>
 
             {/* Headlights */}
-            <ellipse cx="46" cy="124" rx="9" ry="6" fill="#ffe082" opacity=".9"/>
+            <ellipse cx="46" cy="124" rx="9" ry="6" fill="#7ab8ff" opacity=".9"/>
             <ellipse cx="46" cy="124" rx="6" ry="4" fill="#fff"    opacity=".95"/>
 
-            {/* Tail lights — تتوهج أكثر عند الانطلاق */}
+            {/* Tail lights */}
             <ellipse cx="482" cy="122" rx={carDriving ? 11 : 7} ry={carDriving ? 8 : 5}
-              fill="#ff1a00" opacity=".9"/>
+              fill="#1a6aff" opacity=".9"/>
             <ellipse cx="482" cy="122" rx={carDriving ? 7  : 4} ry={carDriving ? 5 : 3}
-              fill="#ff6060" opacity=".95"/>
+              fill="#00aaff" opacity=".95"/>
 
             {/* Axle details */}
-            <rect x="108" y="148" width="32" height="4" rx="2" fill="#333"/>
-            <rect x="346" y="149" width="34" height="4" rx="2" fill="#333"/>
+            <rect x="108" y="148" width="32" height="4" rx="2" fill="#1a3060"/>
+            <rect x="346" y="149" width="34" height="4" rx="2" fill="#1a3060"/>
 
             {/* Cooling fins */}
             <path d="M420 105 L435 105 M420 110 L435 110 M420 115 L435 115"
-              stroke="rgba(255,80,20,.4)" strokeWidth="1.5" strokeLinecap="round"/>
+              stroke="rgba(26,106,255,.4)" strokeWidth="1.5" strokeLinecap="round"/>
 
-            {/* خطوط السرعة خلف السيارة — تظهر فقط عند الانطلاق */}
+            {/* خطوط السرعة خلف السيارة */}
             {carDriving && <>
-              <line x1="502" y1="115" x2="520" y2="115" stroke="rgba(255,200,60,.8)"  strokeWidth="2"   strokeLinecap="round"/>
-              <line x1="504" y1="122" x2="520" y2="122" stroke="rgba(255,130,30,.65)" strokeWidth="1.5" strokeLinecap="round"/>
-              <line x1="504" y1="129" x2="520" y2="129" stroke="rgba(255,100,20,.7)"  strokeWidth="2"   strokeLinecap="round"/>
-              <line x1="506" y1="136" x2="520" y2="136" stroke="rgba(255,200,60,.5)"  strokeWidth="1"   strokeLinecap="round"/>
+              <line x1="502" y1="115" x2="520" y2="115" stroke="rgba(0,170,255,.8)"  strokeWidth="2"   strokeLinecap="round"/>
+              <line x1="504" y1="122" x2="520" y2="122" stroke="rgba(26,106,255,.65)" strokeWidth="1.5" strokeLinecap="round"/>
+              <line x1="504" y1="129" x2="520" y2="129" stroke="rgba(0,170,255,.7)"  strokeWidth="2"   strokeLinecap="round"/>
+              <line x1="506" y1="136" x2="520" y2="136" stroke="rgba(122,184,255,.5)"  strokeWidth="1"   strokeLinecap="round"/>
             </>}
           </svg>
         </div>
@@ -516,8 +514,8 @@ export default function AuthPage() {
           <div className={`road-line${carDriving ? ' fast' : ''}`}/>
         </div>
         <div className="road-divider" />
-        <div className="glow-red" />
-        <div className="glow-orange" />
+        <div className="glow-blue" />
+        <div className="glow-cyan" />
         <div className="scanline" />
       </div>
 
