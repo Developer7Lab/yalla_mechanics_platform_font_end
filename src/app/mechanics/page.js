@@ -22,13 +22,13 @@ const useApi = (accessToken) =>
 const Stars = ({ value, readonly = false }) => (
   <div style={{ display: 'flex', gap: 3 }}>
     {[1,2,3,4,5].map(n => (
-      <span key={n} style={{ fontSize: readonly ? '.95rem' : '1.3rem', color: n <= value ? '#f59e0b' : 'rgba(255,255,255,.13)', userSelect: 'none' }}>★</span>
+      <span key={n} style={{ fontSize: readonly ? '.95rem' : '1.3rem', color: n <= value ? '#1a6aff' : 'rgba(26,106,255,.18)', userSelect: 'none' }}>★</span>
     ))}
   </div>
 );
 
 const Spin = ({ size = 16 }) => (
-  <span style={{ display:'inline-block', width:size, height:size, border:'2px solid rgba(255,255,255,.2)', borderTopColor:'#fff', borderRadius:'50%', animation:'rot .65s linear infinite', verticalAlign:'middle' }} />
+  <span style={{ display:'inline-block', width:size, height:size, border:'2px solid rgba(26,106,255,.2)', borderTopColor:'#0aacff', borderRadius:'50%', animation:'rot .65s linear infinite', verticalAlign:'middle' }} />
 );
 
 const Toast = ({ msg, onClose }) => {
@@ -39,8 +39,8 @@ const Toast = ({ msg, onClose }) => {
       padding:'.78rem 1.2rem', borderRadius:12, fontSize:'.87rem', fontWeight:600,
       cursor:'pointer', animation:'toastIn .3s ease',
       background: msg.type === 'error' ? 'rgba(239,68,68,.15)' : 'rgba(16,185,129,.14)',
-      color: msg.type === 'error' ? '#fca5a5' : '#6ee7b7',
-      border:`1px solid ${msg.type === 'error' ? 'rgba(239,68,68,.3)' : 'rgba(16,185,129,.3)'}`,
+      color: msg.type === 'error' ? '#fca5a5' : '#34d399',
+      border:`1px solid ${msg.type === 'error' ? 'rgba(239,68,68,.3)' : 'rgba(52,211,153,.3)'}`,
       backdropFilter:'blur(12px)', maxWidth:340,
     }}>
       {msg.type === 'error' ? '❌' : '✅'} {msg.text}
@@ -50,14 +50,14 @@ const Toast = ({ msg, onClose }) => {
 
 const StatusBadge = ({ status }) => {
   const map = {
-    pending:    { label:'قيد الانتظار', color:'#f59e0b', bg:'rgba(245,158,11,.14)'  },
-    approved:   { label:'مقبول',        color:'#10b981', bg:'rgba(16,185,129,.14)'  },
-    rejected:   { label:'مرفوض',        color:'#ef4444', bg:'rgba(239,68,68,.14)'   },
-    accepted:   { label:'مقبول',        color:'#10b981', bg:'rgba(16,185,129,.14)'  },
-    inProgress: { label:'جاري العمل',   color:'#38bdf8', bg:'rgba(56,189,248,.14)'  },
-    resolved:   { label:'مكتمل',        color:'#a78bfa', bg:'rgba(167,139,250,.14)' },
-    cancelled:  { label:'ملغي',         color:'#6b7280', bg:'rgba(107,114,128,.14)' },
-    withdrawn:  { label:'مسحوب',        color:'#6b7280', bg:'rgba(107,114,128,.14)' },
+    pending:    { label:'قيد الانتظار', color:'#0aacff',  bg:'rgba(10,172,255,.12)'  },
+    approved:   { label:'مقبول',        color:'#34d399',  bg:'rgba(52,211,153,.12)'  },
+    rejected:   { label:'مرفوض',        color:'#ef4444',  bg:'rgba(239,68,68,.12)'   },
+    accepted:   { label:'مقبول',        color:'#34d399',  bg:'rgba(52,211,153,.12)'  },
+    inProgress: { label:'جاري العمل',   color:'#4a9fff',  bg:'rgba(74,159,255,.12)'  },
+    resolved:   { label:'مكتمل',        color:'#7ab8ff',  bg:'rgba(122,184,255,.12)' },
+    cancelled:  { label:'ملغي',         color:'#6b7280',  bg:'rgba(107,114,128,.12)' },
+    withdrawn:  { label:'مسحوب',        color:'#6b7280',  bg:'rgba(107,114,128,.12)' },
   };
   const s = map[status] || map.pending;
   return (
@@ -68,11 +68,11 @@ const StatusBadge = ({ status }) => {
 const Modal = ({ open, onClose, title, children }) => {
   if (!open) return null;
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,.75)', backdropFilter:'blur(8px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
-      <div style={{ background:'#0f1117', border:'1px solid rgba(255,255,255,.12)', borderRadius:20, padding:'1.8rem', width:'100%', maxWidth:480, maxHeight:'90vh', overflowY:'auto', animation:'up .25s ease' }} onClick={e => e.stopPropagation()}>
+    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,.8)', backdropFilter:'blur(8px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
+      <div style={{ background:'rgba(8,14,30,0.96)', border:'1px solid rgba(26,106,255,.25)', borderRadius:20, padding:'1.8rem', width:'100%', maxWidth:480, maxHeight:'90vh', overflowY:'auto', animation:'up .25s ease' }} onClick={e => e.stopPropagation()}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1.3rem' }}>
-          <div style={{ fontSize:'1.1rem', fontWeight:800, color:'#fff' }}>{title}</div>
-          <button onClick={onClose} style={{ background:'none', border:'none', color:'rgba(255,255,255,.4)', fontSize:'1.3rem', cursor:'pointer', lineHeight:1 }}>✕</button>
+          <div style={{ fontSize:'1.1rem', fontWeight:800, color:'#e0eeff' }}>{title}</div>
+          <button onClick={onClose} style={{ background:'none', border:'none', color:'rgba(160,200,255,.4)', fontSize:'1.3rem', cursor:'pointer', lineHeight:1 }}>✕</button>
         </div>
         {children}
       </div>
@@ -117,11 +117,11 @@ const OverviewPage = ({ api, user, setToast }) => {
       </div>
       <div className="stat-grid">
         {[
-          { ico:'⭐', val:reviews?.averageRating||'0.0', lbl:'متوسط التقييم',    c:'#f59e0b', bg:'rgba(245,158,11,.12)' },
-          { ico:'🚗', val:newBd,    lbl:'أعطال جديدة',        c:'#fbbf24', bg:'rgba(245,158,11,.12)' },
-          { ico:'🔧', val:active,   lbl:'طلبات نشطة',         c:'#38bdf8', bg:'rgba(56,189,248,.12)'  },
-          { ico:'✅', val:accepted, lbl:'اقتراحات مقبولة',     c:'#6ee7b7', bg:'rgba(16,185,129,.12)'  },
-          { ico:'🔔', val:unread,   lbl:'إشعارات غير مقروءة', c:unread>0?'#fca5a5':'#6ee7b7', bg:unread>0?'rgba(239,68,68,.12)':'rgba(16,185,129,.12)' },
+          { ico:'⭐', val:reviews?.averageRating||'0.0', lbl:'متوسط التقييم',    c:'#1a6aff', bg:'rgba(26,106,255,.1)' },
+          { ico:'🚗', val:newBd,    lbl:'أعطال جديدة',        c:'#0aacff', bg:'rgba(10,172,255,.1)' },
+          { ico:'🔧', val:active,   lbl:'طلبات نشطة',         c:'#4a9fff', bg:'rgba(74,159,255,.1)'  },
+          { ico:'✅', val:accepted, lbl:'اقتراحات مقبولة',     c:'#34d399', bg:'rgba(52,211,153,.1)'  },
+          { ico:'🔔', val:unread,   lbl:'إشعارات غير مقروءة', c:unread>0?'#fca5a5':'#34d399', bg:unread>0?'rgba(239,68,68,.1)':'rgba(52,211,153,.1)' },
         ].map((s,i) => (
           <div key={i} className="stat-card">
             <div className="stat-ico" style={{ background:s.bg, color:s.c }}>{s.ico}</div>
@@ -145,10 +145,10 @@ const OverviewPage = ({ api, user, setToast }) => {
           {breakdowns.filter(b => b.status==='inProgress').map(b => (
             <div key={b._id} className="mini-review" style={{ marginBottom:'.6rem' }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <span style={{ fontWeight:700, color:'#fff', fontSize:'.9rem' }}>🚗 {b.carInfo?.brand} {b.carInfo?.model}</span>
+                <span style={{ fontWeight:700, color:'#e0eeff', fontSize:'.9rem' }}>🚗 {b.carInfo?.brand} {b.carInfo?.model}</span>
                 <StatusBadge status="inProgress"/>
               </div>
-              <div style={{ fontSize:'.8rem', color:'rgba(255,255,255,.4)', marginTop:'.3rem' }}>{b.title}</div>
+              <div style={{ fontSize:'.8rem', color:'rgba(160,200,255,.4)', marginTop:'.3rem' }}>{b.title}</div>
             </div>
           ))}
         </div>
@@ -159,10 +159,10 @@ const OverviewPage = ({ api, user, setToast }) => {
           {reviews.reviews.slice(0,3).map(r => (
             <div key={r._id} className="mini-review" style={{ marginBottom:'.6rem' }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'.3rem' }}>
-                <span style={{ fontSize:'.85rem', fontWeight:700, color:'#fff' }}>{r.userId?.fullName}</span>
+                <span style={{ fontSize:'.85rem', fontWeight:700, color:'#e0eeff' }}>{r.userId?.fullName}</span>
                 <Stars value={r.rating} readonly/>
               </div>
-              <div style={{ fontSize:'.82rem', color:'rgba(255,255,255,.55)' }}>{r.comment}</div>
+              <div style={{ fontSize:'.82rem', color:'rgba(160,200,255,.55)' }}>{r.comment}</div>
             </div>
           ))}
         </div>
@@ -250,10 +250,10 @@ const LocationPage = ({ api, setToast }) => {
             {requests.map(r => (
               <div key={r._id} className="req-card">
                 <div className="req-top">
-                  <div>{r.businessName && <div style={{ fontWeight:700, color:'#fff', fontSize:'.9rem', marginBottom:'.15rem' }}>{r.businessName}</div>}<div style={{ fontSize:'.85rem', color:'rgba(255,255,255,.55)' }}>🗺️ {r.address}</div></div>
+                  <div>{r.businessName && <div style={{ fontWeight:700, color:'#e0eeff', fontSize:'.9rem', marginBottom:'.15rem' }}>{r.businessName}</div>}<div style={{ fontSize:'.85rem', color:'rgba(160,200,255,.55)' }}>🗺️ {r.address}</div></div>
                   <StatusBadge status={r.status}/>
                 </div>
-                <div style={{ fontSize:'.75rem', color:'rgba(255,255,255,.3)', marginTop:'.5rem', display:'flex', gap:'1.2rem' }}>
+                <div style={{ fontSize:'.75rem', color:'rgba(160,200,255,.3)', marginTop:'.5rem', display:'flex', gap:'1.2rem' }}>
                   <span>طُلب: {new Date(r.requestedAt).toLocaleDateString('ar')}</span>
                   {r.processedAt && <span>عولج: {new Date(r.processedAt).toLocaleDateString('ar')}</span>}
                 </div>
@@ -291,8 +291,8 @@ const NotificationsPage = ({ api, setToast, onRead }) => {
             <div key={n._id} className={`notif-card ${n.read?'':'notif-unread'}`}>
               <div className="notif-ico">{typeIcon[n.type]||'ℹ️'}</div>
               <div style={{ flex:1 }}>
-                <div style={{ fontSize:'.9rem', color:n.read?'rgba(255,255,255,.55)':'#fff', fontWeight:n.read?400:600 }}>{n.message}</div>
-                <div style={{ fontSize:'.75rem', color:'rgba(255,255,255,.28)', marginTop:'.25rem' }}>{new Date(n.createdAt).toLocaleString('ar')}</div>
+                <div style={{ fontSize:'.9rem', color:n.read?'rgba(160,200,255,.55)':'#e0eeff', fontWeight:n.read?400:600 }}>{n.message}</div>
+                <div style={{ fontSize:'.75rem', color:'rgba(160,200,255,.28)', marginTop:'.25rem' }}>{new Date(n.createdAt).toLocaleString('ar')}</div>
               </div>
               {!n.read && <div className="unread-dot"/>}
             </div>
@@ -310,7 +310,7 @@ const ReviewsPage = ({ api, setToast }) => {
   return (
     <div className="page">
       <div className="page-hdr"><div className="page-title">تقييماتي</div><div className="page-sub">ما يقوله العملاء عنك</div></div>
-      <div className="reviews-summary"><div className="rs-big">{data?.averageRating||'0.0'}</div><div><Stars value={Math.round(data?.averageRating||0)} readonly/><div style={{ fontSize:'.82rem', color:'rgba(255,255,255,.4)', marginTop:'.3rem' }}>مبني على {data?.totalReviews||0} تقييم</div></div></div>
+      <div className="reviews-summary"><div className="rs-big">{data?.averageRating||'0.0'}</div><div><Stars value={Math.round(data?.averageRating||0)} readonly/><div style={{ fontSize:'.82rem', color:'rgba(160,200,255,.4)', marginTop:'.3rem' }}>مبني على {data?.totalReviews||0} تقييم</div></div></div>
       {!data?.reviews?.length ? <div className="empty-state"><div style={{ fontSize:'3rem', marginBottom:'.6rem' }}>💬</div><div>لا توجد تقييمات بعد</div></div>
         : <div style={{ display:'flex', flexDirection:'column', gap:'.9rem', marginTop:'1.2rem' }}>
           {data.reviews.map(r => (
@@ -443,7 +443,7 @@ const BreakdownsPage = ({ api, setToast, onReport }) => {
                     {hasMyProp && mp.status==='rejected' && <span className="prop-mine-badge prop-mine-rejected">❌ مرفوض</span>}
                     <StatusBadge status={b.status}/>
                     {b.proposalCount>0 && <span className="prop-count-badge">{b.proposalCount} 💬</span>}
-                    <span style={{ fontSize:'.75rem', color:'rgba(255,255,255,.25)', transition:'transform .2s', transform:isOpen?'rotate(180deg)':'none' }}>▼</span>
+                    <span style={{ fontSize:'.75rem', color:'rgba(160,200,255,.25)', transition:'transform .2s', transform:isOpen?'rotate(180deg)':'none' }}>▼</span>
                   </div>
                 </div>
 
@@ -485,7 +485,7 @@ const BreakdownsPage = ({ api, setToast, onReport }) => {
                       <div className="my-proposal-box">
                         <div className="bd-section-title" style={{ marginBottom:'.7rem' }}>📤 اقتراحي المقدَّم</div>
                         <div className="bd-detail-grid">
-                          <div className="bd-detail-item"><span className="bd-detail-lbl">السعر</span><span className="bd-detail-val" style={{ color:'#fbbf24', fontWeight:800 }}>{mp.price} {mp.currency}</span></div>
+                          <div className="bd-detail-item"><span className="bd-detail-lbl">السعر</span><span className="bd-detail-val" style={{ color:'#0aacff', fontWeight:800 }}>{mp.price} {mp.currency}</span></div>
                           <div className="bd-detail-item"><span className="bd-detail-lbl">الحالة</span><span className="bd-detail-val"><StatusBadge status={mp.status}/></span></div>
                           <div className="bd-detail-item"><span className="bd-detail-lbl">نوع الخدمة</span><span className="bd-detail-val">{mp.serviceType==='onsite'?'🚘 عند العميل':'🏭 في الورشة'}</span></div>
                           {mp.estimatedTime && <div className="bd-detail-item"><span className="bd-detail-lbl">الوقت المتوقع</span><span className="bd-detail-val">{mp.estimatedTime}</span></div>}
@@ -503,7 +503,7 @@ const BreakdownsPage = ({ api, setToast, onReport }) => {
                         <button className="btn-accept" onClick={()=>openProposalModal(b)}>💬 تقديم اقتراح</button>
                       )}
                       {b.status==='pending' && hasMyProp && mp.status==='pending' && (
-                        <div style={{ fontSize:'.83rem', color:'rgba(255,255,255,.35)', padding:'.5rem 0' }}>⏳ بانتظار رد العميل...</div>
+                        <div style={{ fontSize:'.83rem', color:'rgba(160,200,255,.35)', padding:'.5rem 0' }}>⏳ بانتظار رد العميل...</div>
                       )}
                       {b.status==='pending' && hasMyProp && mp.status==='rejected' && (
                         <button className="btn-accept" onClick={()=>openProposalModal(b)}>🔄 تقديم اقتراح جديد</button>
@@ -526,8 +526,8 @@ const BreakdownsPage = ({ api, setToast, onReport }) => {
         {proposalModal && (
           <>
             <div className="modal-bd-info">
-              <div style={{ fontWeight:700, color:'#fff', marginBottom:'.2rem' }}>🚗 {proposalModal.carInfo?.brand} {proposalModal.carInfo?.model} {proposalModal.carInfo?.year&&`(${proposalModal.carInfo.year})`}</div>
-              <div style={{ fontSize:'.82rem', color:'rgba(255,255,255,.45)' }}>{proposalModal.title}</div>
+              <div style={{ fontWeight:700, color:'#e0eeff', marginBottom:'.2rem' }}>🚗 {proposalModal.carInfo?.brand} {proposalModal.carInfo?.model} {proposalModal.carInfo?.year&&`(${proposalModal.carInfo.year})`}</div>
+              <div style={{ fontSize:'.82rem', color:'rgba(160,200,255,.45)' }}>{proposalModal.title}</div>
             </div>
             <form onSubmit={submitProposal} className="form-grid">
               <div className="fg"><label className="lbl">السعر المقترح <span style={{ color:'#ef4444' }}>*</span></label><div className="inp-wrap"><span className="ico">💰</span><input className="inp" type="number" min="0" step="0.5" required value={proposalForm.price} onChange={pf('price')} placeholder="0.00"/></div></div>
@@ -615,7 +615,7 @@ const MyProposalsPage = ({ api, setToast, onReport }) => {
                   </div>
                   <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'.4rem', flexShrink:0 }}>
                     <StatusBadge status={p.status}/>
-                    <div style={{ fontSize:'1.1rem', fontWeight:900, color:'#fbbf24' }}>{p.price} {p.currency}</div>
+                    <div style={{ fontSize:'1.1rem', fontWeight:900, color:'#0aacff' }}>{p.price} {p.currency}</div>
                   </div>
                 </div>
                 <div className="prop-details">
@@ -625,8 +625,8 @@ const MyProposalsPage = ({ api, setToast, onReport }) => {
                 </div>
                 <div className="prop-desc">{p.serviceDescription}</div>
                 {p.notes && <div className="prop-notes">📝 {p.notes}</div>}
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'.8rem', paddingTop:'.8rem', borderTop:'1px solid rgba(255,255,255,.06)' }}>
-                  <span style={{ fontSize:'.78rem', color:'rgba(255,255,255,.3)' }}>حالة العطل: <StatusBadge status={bd.status||'pending'}/></span>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'.8rem', paddingTop:'.8rem', borderTop:'1px solid rgba(26,106,255,.1)' }}>
+                  <span style={{ fontSize:'.78rem', color:'rgba(160,200,255,.3)' }}>حالة العطل: <StatusBadge status={bd.status||'pending'}/></span>
                   {p.status==='pending' && (
                     <button className="btn-withdraw" disabled={withdrawing===p._id} onClick={()=>withdraw(p._id)}>
                       {withdrawing===p._id?<Spin size={13}/>:'↩️'} سحب
@@ -638,7 +638,7 @@ const MyProposalsPage = ({ api, setToast, onReport }) => {
                     </button>
                   )}
                   {p.status==='accepted' && bd.status==='resolved' && (
-                    <span style={{ fontSize:'.82rem', color:'#a78bfa', fontWeight:700 }}>✅ تم إرسال التقرير</span>
+                    <span style={{ fontSize:'.82rem', color:'#7ab8ff', fontWeight:700 }}>✅ تم إرسال التقرير</span>
                   )}
                 </div>
               </div>
@@ -650,9 +650,6 @@ const MyProposalsPage = ({ api, setToast, onReport }) => {
   );
 };
 
-// ============================================================
-// ReportPage — يرسل JSON بدل PDF
-// ============================================================
 const ReportPage = ({ api, accessToken, breakdown, setToast, onDone }) => {
   const [step, setStep]             = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -673,44 +670,28 @@ const ReportPage = ({ api, accessToken, breakdown, setToast, onDone }) => {
   const grandTotal = form.finalPrice ? Number(form.finalPrice) : totalParts;
 
   const submitReport = async () => {
-    if (!form.solutionSummary.trim()) {
-      setToast({ type:'error', text:'يرجى كتابة ملخص الحل' });
-      return;
-    }
-    if (grandTotal <= 0) {
-      setToast({ type:'error', text:'يرجى إدخال السعر النهائي' });
-      return;
-    }
+    if (!form.solutionSummary.trim()) { setToast({ type:'error', text:'يرجى كتابة ملخص الحل' }); return; }
+    if (grandTotal <= 0) { setToast({ type:'error', text:'يرجى إدخال السعر النهائي' }); return; }
     try {
       setSubmitting(true);
-   const payload = {
-  solutionSummary: form.solutionSummary.trim(), // زيادة حرص
-  finalPrice: Number(grandTotal),               // لضمان أنه رقم
-  currency: form.currency || 'JOD',
-  spareParts: form.spareParts.filter(p => p.name.trim() !== ''),
-  mechanicNotes: form.mechanicNotes,
-};
+      const payload = {
+        solutionSummary: form.solutionSummary.trim(),
+        finalPrice: Number(grandTotal),
+        currency: form.currency || 'JOD',
+        spareParts: form.spareParts.filter(p => p.name.trim() !== ''),
+        mechanicNotes: form.mechanicNotes,
+      };
       const res = await fetch(
         `${API_BASE_URL}/api/mechanics/breakdowns/${breakdown._id}/report`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify(payload),
-        }
+        { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${accessToken}` }, body:JSON.stringify(payload) }
       );
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || 'فشل الإرسال');
       setToast({ type:'success', text:'✅ تم إرسال التقرير للعميل!' });
       setStep(2);
       setTimeout(onDone, 2000);
-    } catch(err) {
-      setToast({ type:'error', text:err.message });
-    } finally {
-      setSubmitting(false);
-    }
+    } catch(err) { setToast({ type:'error', text:err.message }); }
+    finally { setSubmitting(false); }
   };
 
   const car = breakdown.carInfo || {};
@@ -719,12 +700,11 @@ const ReportPage = ({ api, accessToken, breakdown, setToast, onDone }) => {
     <div className="page">
       <div className="page-hdr">
         <div className="page-title">📄 تقرير الإصلاح</div>
-        <div style={{ background:'rgba(255,255,255,.06)', borderRadius:10, padding:'.4rem .9rem', fontSize:'.85rem', color:'rgba(255,255,255,.55)', marginTop:'.5rem', display:'inline-flex', alignItems:'center', gap:'.5rem' }}>
+        <div style={{ background:'rgba(26,106,255,.08)', borderRadius:10, padding:'.4rem .9rem', fontSize:'.85rem', color:'rgba(160,200,255,.55)', marginTop:'.5rem', display:'inline-flex', alignItems:'center', gap:'.5rem', border:'1px solid rgba(26,106,255,.15)' }}>
           🚗 {car.brand} {car.model} {car.year&&`(${car.year})`} — {breakdown.title}
         </div>
       </div>
 
-      {/* Steps: 2 only */}
       <div className="rpt-steps">
         {[['1','تعبئة البيانات'],['2','تم الإرسال']].map(([n,l],i)=>(
           <div key={n} className={`rpt-step ${step>=Number(n)?'rpt-step-done':''} ${step===Number(n)?'rpt-step-active':''}`}>
@@ -749,12 +729,12 @@ const ReportPage = ({ api, accessToken, breakdown, setToast, onDone }) => {
                   <div className="inp-wrap" style={{ flex:3 }}><span className="ico">🔩</span><input className="inp" value={p.name} onChange={sp(i,'name')} placeholder={`قطعة ${i+1}`}/></div>
                   <div className="inp-wrap" style={{ flex:1 }}><input className="inp" type="number" min="1" value={p.quantity} onChange={sp(i,'quantity')} placeholder="كمية" style={{ paddingRight:'.7rem' }}/></div>
                   <div className="inp-wrap" style={{ flex:1.5 }}><input className="inp" type="number" min="0" step="0.5" value={p.price} onChange={sp(i,'price')} placeholder="السعر" style={{ paddingRight:'.7rem' }}/></div>
-                  <div style={{ fontSize:'.8rem', color:'#fbbf24', minWidth:50, textAlign:'center', fontWeight:700 }}>{(p.quantity*p.price).toFixed(2)}</div>
+                  <div style={{ fontSize:'.8rem', color:'#0aacff', minWidth:50, textAlign:'center', fontWeight:700 }}>{(p.quantity*p.price).toFixed(2)}</div>
                   {form.spareParts.length>1&&<button type="button" onClick={()=>removePart(i)} style={{ background:'rgba(239,68,68,.1)', border:'1px solid rgba(239,68,68,.25)', borderRadius:8, color:'#fca5a5', width:32, height:32, cursor:'pointer', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>}
                 </div>
               ))}
               <button type="button" onClick={addPart} className="btn-add-part">+ إضافة قطعة</button>
-              {totalParts>0&&<div style={{ textAlign:'left', marginTop:'.5rem', fontSize:'.85rem', color:'rgba(255,255,255,.4)' }}>مجموع القطع: <span style={{ color:'#fbbf24', fontWeight:700 }}>{totalParts.toFixed(2)} {form.currency}</span></div>}
+              {totalParts>0&&<div style={{ textAlign:'left', marginTop:'.5rem', fontSize:'.85rem', color:'rgba(160,200,255,.4)' }}>مجموع القطع: <span style={{ color:'#0aacff', fontWeight:700 }}>{totalParts.toFixed(2)} {form.currency}</span></div>}
             </div>
             <div className="fg">
               <label className="lbl">السعر النهائي الإجمالي <span style={{ color:'#ef4444' }}>*</span></label>
@@ -770,16 +750,12 @@ const ReportPage = ({ api, accessToken, breakdown, setToast, onDone }) => {
             </div>
             <div className="fg full">
               <div className="total-box">
-                <span style={{ fontSize:'.95rem', color:'rgba(255,255,255,.55)' }}>إجمالي الفاتورة</span>
-                <span style={{ fontSize:'1.6rem', fontWeight:900, color:'#f59e0b' }}>{grandTotal.toFixed(2)} <span style={{ fontSize:'1rem', fontWeight:400 }}>{form.currency}</span></span>
+                <span style={{ fontSize:'.95rem', color:'rgba(160,200,255,.55)' }}>إجمالي الفاتورة</span>
+                <span style={{ fontSize:'1.6rem', fontWeight:900, color:'#0aacff' }}>{grandTotal.toFixed(2)} <span style={{ fontSize:'1rem', fontWeight:400 }}>{form.currency}</span></span>
               </div>
             </div>
             <div className="fg full">
-              <button
-                className="btn-primary"
-                disabled={submitting || !form.solutionSummary.trim() || grandTotal <= 0}
-                onClick={submitReport}
-              >
+              <button className="btn-primary" disabled={submitting || !form.solutionSummary.trim() || grandTotal <= 0} onClick={submitReport}>
                 {submitting ? <><Spin/> جاري الإرسال...</> : '📤 إرسال التقرير للعميل'}
               </button>
             </div>
@@ -790,8 +766,8 @@ const ReportPage = ({ api, accessToken, breakdown, setToast, onDone }) => {
       {step===2 && (
         <div className="card-glass" style={{ textAlign:'center', padding:'3rem', maxWidth:500 }}>
           <div style={{ fontSize:'4rem', marginBottom:'1rem' }}>🎉</div>
-          <div style={{ fontSize:'1.3rem', fontWeight:900, color:'#6ee7b7', marginBottom:'.5rem' }}>تم إرسال التقرير بنجاح!</div>
-          <div style={{ color:'rgba(255,255,255,.45)', fontSize:'.9rem' }}>وصلت بيانات التقرير للعميل ويمكنه الآن تقييم خدمتك.</div>
+          <div style={{ fontSize:'1.3rem', fontWeight:900, color:'#34d399', marginBottom:'.5rem' }}>تم إرسال التقرير بنجاح!</div>
+          <div style={{ color:'rgba(160,200,255,.45)', fontSize:'.9rem' }}>وصلت بيانات التقرير للعميل ويمكنه الآن تقييم خدمتك.</div>
         </div>
       )}
     </div>
@@ -835,7 +811,7 @@ export default function MechanicDashboard() {
 
   if (!mounted) return null;
   if (!accessToken) return (
-    <div style={{ minHeight:'100vh', background:'#06080f', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Tajawal,sans-serif', color:'#fff', direction:'rtl', fontSize:'1.1rem' }}>
+    <div style={{ minHeight:'100vh', background:'#0a0a0f', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Tajawal,sans-serif', color:'#e0eeff', direction:'rtl', fontSize:'1.1rem' }}>
       <div style={{ textAlign:'center' }}><div style={{ fontSize:'3rem', marginBottom:'1rem' }}>🔐</div><div>يجب تسجيل الدخول أولاً</div></div>
     </div>
   );
@@ -862,162 +838,162 @@ export default function MechanicDashboard() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=Sora:wght@600;700&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        body,html{background:#06080f;font-family:'Tajawal',sans-serif;direction:rtl;color:#e2e8f0;min-height:100vh}
+        body,html{background:#0a0a0f;font-family:'Tajawal',sans-serif;direction:rtl;color:#c8e0ff;min-height:100vh}
         @keyframes rot{to{transform:rotate(360deg)}}
         @keyframes up{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
         @keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
         @keyframes bdSlide{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
         .layout{display:flex;min-height:100vh}
-        .sidebar{width:235px;flex-shrink:0;background:rgba(255,255,255,.025);border-left:1px solid rgba(255,255,255,.065);display:flex;flex-direction:column;padding:1.4rem .9rem;position:sticky;top:0;height:100vh;backdrop-filter:blur(20px)}
+        .sidebar{width:235px;flex-shrink:0;background:rgba(8,14,30,0.88);border-left:1px solid rgba(26,106,255,.15);display:flex;flex-direction:column;padding:1.4rem .9rem;position:sticky;top:0;height:100vh;backdrop-filter:blur(20px)}
         .sb-brand{display:flex;align-items:center;gap:.65rem;margin-bottom:1.8rem;padding:.25rem .5rem}
-        .sb-logo{width:40px;height:40px;background:linear-gradient(135deg,#f59e0b,#ef4444);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
-        .sb-title{font-family:'Sora',sans-serif;font-size:1.1rem;font-weight:700;color:#fff}
-        .user-chip{display:flex;align-items:center;gap:.65rem;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.18);border-radius:13px;padding:.8rem .9rem;margin-bottom:1.5rem}
-        .uc-av{width:38px;height:38px;background:linear-gradient(135deg,#f59e0b,#ef4444);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
-        .uc-name{font-size:.86rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .uc-role{font-size:.7rem;color:rgba(245,158,11,.7)}
-        .nav-btn{display:flex;align-items:center;justify-content:space-between;padding:.68rem .9rem;border-radius:11px;font-family:'Tajawal',sans-serif;font-size:.9rem;font-weight:500;color:rgba(255,255,255,.42);cursor:pointer;transition:all .2s;margin-bottom:.22rem;border:none;background:transparent;width:100%;text-align:right}
-        .nav-btn:hover{background:rgba(255,255,255,.055);color:rgba(255,255,255,.78)}
-        .nav-btn.active{background:rgba(245,158,11,.12);color:#fbbf24;font-weight:700;border:1px solid rgba(245,158,11,.22)}
+        .sb-logo{width:40px;height:40px;background:linear-gradient(135deg,#1a6aff,#0a90ff);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;box-shadow:0 0 16px rgba(26,106,255,.35)}
+        .sb-title{font-family:'Sora',sans-serif;font-size:1.1rem;font-weight:700;background:linear-gradient(90deg,#0aacff,#4a9fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .user-chip{display:flex;align-items:center;gap:.65rem;background:rgba(26,106,255,.08);border:1px solid rgba(26,106,255,.2);border-radius:13px;padding:.8rem .9rem;margin-bottom:1.5rem}
+        .uc-av{width:38px;height:38px;background:linear-gradient(135deg,#1a6aff,#0a90ff);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+        .uc-name{font-size:.86rem;font-weight:700;color:#e0eeff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .uc-role{font-size:.7rem;color:rgba(74,159,255,.7)}
+        .nav-btn{display:flex;align-items:center;justify-content:space-between;padding:.68rem .9rem;border-radius:11px;font-family:'Tajawal',sans-serif;font-size:.9rem;font-weight:500;color:rgba(160,200,255,.4);cursor:pointer;transition:all .2s;margin-bottom:.22rem;border:none;background:transparent;width:100%;text-align:right}
+        .nav-btn:hover{background:rgba(26,106,255,.08);color:rgba(160,200,255,.8)}
+        .nav-btn.active{background:rgba(26,106,255,.14);color:#4a9fff;font-weight:700;border:1px solid rgba(26,106,255,.28)}
         .nav-left{display:flex;align-items:center;gap:.6rem}
         .nav-ico{font-size:1rem;width:20px;text-align:center}
-        .nav-badge{background:#ef4444;color:#fff;font-size:.65rem;font-weight:800;padding:.15rem .45rem;border-radius:20px;min-width:18px;text-align:center;animation:pulse 2s infinite}
+        .nav-badge{background:#1a6aff;color:#fff;font-size:.65rem;font-weight:800;padding:.15rem .45rem;border-radius:20px;min-width:18px;text-align:center;animation:pulse 2s infinite;box-shadow:0 0 8px rgba(26,106,255,.5)}
         .main{flex:1;overflow-y:auto;padding:2rem;max-width:900px}
         .page{animation:up .35s ease}
         .page-hdr{margin-bottom:1.8rem}
-        .page-title{font-size:1.55rem;font-weight:900;color:#fff;display:flex;align-items:center;gap:.6rem}
-        .page-sub{font-size:.88rem;color:rgba(255,255,255,.32);margin-top:.25rem}
-        .card-glass{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:1.6rem;backdrop-filter:blur(16px)}
-        .sec-title{font-size:1rem;font-weight:700;color:#fff;display:flex;align-items:center;gap:.5rem}
+        .page-title{font-size:1.55rem;font-weight:900;color:#e0eeff;display:flex;align-items:center;gap:.6rem}
+        .page-sub{font-size:.88rem;color:rgba(160,200,255,.32);margin-top:.25rem}
+        .card-glass{background:rgba(8,14,30,0.7);border:1px solid rgba(26,106,255,.15);border-radius:20px;padding:1.6rem;backdrop-filter:blur(16px)}
+        .sec-title{font-size:1rem;font-weight:700;color:#e0eeff;display:flex;align-items:center;gap:.5rem}
         .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.9rem}
-        .stat-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:1.2rem;text-align:center;transition:border-color .2s,transform .2s}
-        .stat-card:hover{border-color:rgba(245,158,11,.25);transform:translateY(-2px)}
+        .stat-card{background:rgba(8,14,30,0.7);border:1px solid rgba(26,106,255,.12);border-radius:16px;padding:1.2rem;text-align:center;transition:border-color .2s,transform .2s}
+        .stat-card:hover{border-color:rgba(26,106,255,.35);transform:translateY(-2px)}
         .stat-ico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin:0 auto .7rem}
-        .stat-val{font-size:1.6rem;font-weight:900;color:#fff;margin-bottom:.2rem}
-        .stat-lbl{font-size:.78rem;color:rgba(255,255,255,.38)}
+        .stat-val{font-size:1.6rem;font-weight:900;color:#e0eeff;margin-bottom:.2rem}
+        .stat-lbl{font-size:.78rem;color:rgba(160,200,255,.38)}
         .loc-info-row{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.7rem}
-        .loc-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:.35rem .75rem;font-size:.82rem;color:rgba(255,255,255,.6)}
+        .loc-pill{background:rgba(26,106,255,.08);border:1px solid rgba(26,106,255,.18);border-radius:8px;padding:.35rem .75rem;font-size:.82rem;color:rgba(160,200,255,.65)}
         .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
         .fg{display:flex;flex-direction:column}
         .fg.full{grid-column:1/-1}
-        .lbl{font-size:.78rem;font-weight:600;color:rgba(255,255,255,.38);margin-bottom:.32rem}
+        .lbl{font-size:.78rem;font-weight:600;color:rgba(160,200,255,.38);margin-bottom:.32rem}
         .inp-wrap{position:relative}
         .ico{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:.88rem;opacity:.38;pointer-events:none}
-        .inp{width:100%;padding:.76rem 2.5rem .76rem .9rem;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.09);border-radius:11px;color:#fff;font-family:'Tajawal',sans-serif;font-size:.95rem;outline:none;transition:border-color .2s,background .2s,box-shadow .2s;text-align:right}
-        .inp::placeholder{color:rgba(255,255,255,.2)}
-        .inp:focus{border-color:#f59e0b;background:rgba(245,158,11,.07);box-shadow:0 0 0 3px rgba(245,158,11,.14)}
-        .inp-select{appearance:none;padding-left:1.8rem;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,.3)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 10px center}
-        .inp-select option{background:#1a1a2e}
+        .inp{width:100%;padding:.76rem 2.5rem .76rem .9rem;background:rgba(26,106,255,.05);border:1px solid rgba(26,106,255,.15);border-radius:11px;color:#c8e0ff;font-family:'Tajawal',sans-serif;font-size:.95rem;outline:none;transition:border-color .2s,background .2s,box-shadow .2s;text-align:right}
+        .inp::placeholder{color:rgba(160,200,255,.2)}
+        .inp:focus{border-color:#1a6aff;background:rgba(26,106,255,.09);box-shadow:0 0 0 3px rgba(26,106,255,.15)}
+        .inp-select{appearance:none;padding-left:1.8rem;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(74,159,255,.5)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 10px center}
+        .inp-select option{background:#080e1e}
         textarea.inp{padding-right:.9rem}
-        .profile-hero{display:flex;align-items:center;gap:1.1rem;margin-bottom:1.8rem;padding-bottom:1.4rem;border-bottom:1px solid rgba(255,255,255,.07)}
-        .hero-avatar{width:62px;height:62px;background:linear-gradient(135deg,#f59e0b,#ef4444);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.7rem;flex-shrink:0}
-        .hero-name{font-size:1.12rem;font-weight:700;color:#fff}
-        .hero-user{font-size:.82rem;color:rgba(255,255,255,.38);margin:.18rem 0}
-        .role-badge{display:inline-block;font-size:.7rem;font-weight:700;padding:.18rem .55rem;border-radius:20px;background:rgba(245,158,11,.15);color:#fbbf24;letter-spacing:.4px}
-        .btn-primary{padding:.82rem;background:linear-gradient(135deg,#f59e0b,#ef4444);border:none;border-radius:12px;color:#fff;font-family:'Tajawal',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:transform .2s,box-shadow .2s,opacity .2s;box-shadow:0 4px 18px rgba(245,158,11,.35);width:100%}
-        .btn-primary:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 24px rgba(245,158,11,.5)}
+        .profile-hero{display:flex;align-items:center;gap:1.1rem;margin-bottom:1.8rem;padding-bottom:1.4rem;border-bottom:1px solid rgba(26,106,255,.1)}
+        .hero-avatar{width:62px;height:62px;background:linear-gradient(135deg,#1a6aff,#0a90ff);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.7rem;flex-shrink:0;box-shadow:0 0 20px rgba(26,106,255,.4)}
+        .hero-name{font-size:1.12rem;font-weight:700;color:#e0eeff}
+        .hero-user{font-size:.82rem;color:rgba(160,200,255,.38);margin:.18rem 0}
+        .role-badge{display:inline-block;font-size:.7rem;font-weight:700;padding:.18rem .55rem;border-radius:20px;background:rgba(26,106,255,.15);color:#4a9fff;letter-spacing:.4px;border:1px solid rgba(26,106,255,.25)}
+        .btn-primary{padding:.82rem;background:linear-gradient(135deg,#0a2060,#1a5aef,#0a90ff);border:none;border-radius:12px;color:#fff;font-family:'Tajawal',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:transform .2s,box-shadow .2s,opacity .2s;box-shadow:0 4px 18px rgba(26,106,255,.4);width:100%}
+        .btn-primary:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 24px rgba(26,106,255,.6)}
         .btn-primary:disabled{opacity:.55;cursor:not-allowed}
-        .btn-outline-sm{padding:.44rem .95rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:9px;color:rgba(255,255,255,.6);font-family:'Tajawal',sans-serif;font-size:.83rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem}
-        .btn-outline-sm:hover{background:rgba(255,255,255,.12);color:#fff}
+        .btn-outline-sm{padding:.44rem .95rem;background:rgba(26,106,255,.06);border:1px solid rgba(26,106,255,.2);border-radius:9px;color:rgba(74,159,255,.7);font-family:'Tajawal',sans-serif;font-size:.83rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem}
+        .btn-outline-sm:hover{background:rgba(26,106,255,.14);color:#4a9fff}
         .btn-outline-sm:disabled{opacity:.5;cursor:not-allowed}
-        .detail-row{display:flex;justify-content:space-between;align-items:flex-start;padding:.55rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
+        .detail-row{display:flex;justify-content:space-between;align-items:flex-start;padding:.55rem 0;border-bottom:1px solid rgba(26,106,255,.08)}
         .detail-row:last-child{border-bottom:none}
-        .detail-lbl{font-size:.82rem;color:rgba(255,255,255,.38)}
-        .detail-val{font-size:.88rem;color:#fff;font-weight:500;text-align:left;max-width:60%;word-break:break-word}
-        .info-banner{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:11px;padding:.85rem 1rem;font-size:.87rem;color:#fbbf24;margin-top:.9rem;display:flex;align-items:center;gap:.6rem}
-        .empty-inline{font-size:.85rem;color:rgba(255,255,255,.3);padding:.9rem 0}
-        .empty-state{text-align:center;padding:4rem 2rem;color:rgba(255,255,255,.3);font-size:.92rem}
-        .center-msg{display:flex;align-items:center;justify-content:center;gap:.7rem;padding:3rem;color:rgba(255,255,255,.35);font-size:.92rem}
-        .req-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:1rem 1.1rem}
+        .detail-lbl{font-size:.82rem;color:rgba(160,200,255,.38)}
+        .detail-val{font-size:.88rem;color:#e0eeff;font-weight:500;text-align:left;max-width:60%;word-break:break-word}
+        .info-banner{background:rgba(26,106,255,.08);border:1px solid rgba(26,106,255,.22);border-radius:11px;padding:.85rem 1rem;font-size:.87rem;color:#4a9fff;margin-top:.9rem;display:flex;align-items:center;gap:.6rem}
+        .empty-inline{font-size:.85rem;color:rgba(160,200,255,.3);padding:.9rem 0}
+        .empty-state{text-align:center;padding:4rem 2rem;color:rgba(160,200,255,.3);font-size:.92rem}
+        .center-msg{display:flex;align-items:center;justify-content:center;gap:.7rem;padding:3rem;color:rgba(160,200,255,.35);font-size:.92rem}
+        .req-card{background:rgba(26,106,255,.04);border:1px solid rgba(26,106,255,.12);border-radius:13px;padding:1rem 1.1rem}
         .req-top{display:flex;align-items:flex-start;justify-content:space-between;gap:.7rem}
-        .notif-count{background:#ef4444;color:#fff;font-size:.7rem;font-weight:800;padding:.15rem .5rem;border-radius:20px;vertical-align:middle}
-        .notif-card{display:flex;align-items:flex-start;gap:.8rem;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:13px;padding:.9rem 1rem;transition:border-color .2s}
-        .notif-unread{border-color:rgba(245,158,11,.22);background:rgba(245,158,11,.04)}
+        .notif-count{background:#1a6aff;color:#fff;font-size:.7rem;font-weight:800;padding:.15rem .5rem;border-radius:20px;vertical-align:middle}
+        .notif-card{display:flex;align-items:flex-start;gap:.8rem;background:rgba(26,106,255,.03);border:1px solid rgba(26,106,255,.1);border-radius:13px;padding:.9rem 1rem;transition:border-color .2s}
+        .notif-unread{border-color:rgba(26,106,255,.28);background:rgba(26,106,255,.07)}
         .notif-ico{font-size:1.1rem;flex-shrink:0;margin-top:.1rem}
-        .unread-dot{width:8px;height:8px;border-radius:50%;background:#f59e0b;flex-shrink:0;margin-top:.35rem;animation:pulse 2s infinite}
-        .reviews-summary{display:flex;align-items:center;gap:1.2rem;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.18);border-radius:18px;padding:1.3rem 1.5rem}
-        .rs-big{font-size:3rem;font-weight:900;color:#f59e0b;line-height:1}
-        .review-card{background:rgba(255,255,255,.038);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:1.1rem}
+        .unread-dot{width:8px;height:8px;border-radius:50%;background:#1a6aff;flex-shrink:0;margin-top:.35rem;animation:pulse 2s infinite;box-shadow:0 0 6px rgba(26,106,255,.8)}
+        .reviews-summary{display:flex;align-items:center;gap:1.2rem;background:rgba(26,106,255,.07);border:1px solid rgba(26,106,255,.2);border-radius:18px;padding:1.3rem 1.5rem}
+        .rs-big{font-size:3rem;font-weight:900;color:#0aacff;line-height:1}
+        .review-card{background:rgba(8,14,30,0.7);border:1px solid rgba(26,106,255,.12);border-radius:16px;padding:1.1rem}
         .review-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.7rem}
         .reviewer-row{display:flex;align-items:center;gap:.65rem}
-        .rev-avatar{width:38px;height:38px;background:rgba(99,102,241,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0}
-        .rev-name{font-size:.9rem;font-weight:700;color:#fff}
-        .rev-user{font-size:.75rem;color:rgba(255,255,255,.33)}
-        .rev-date{font-size:.74rem;color:rgba(255,255,255,.28)}
-        .rev-comment{font-size:.87rem;color:rgba(255,255,255,.6);line-height:1.65}
-        .mini-review{background:rgba(255,255,255,.03);border-radius:10px;padding:.7rem .9rem}
+        .rev-avatar{width:38px;height:38px;background:rgba(26,106,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0;border:1px solid rgba(26,106,255,.3)}
+        .rev-name{font-size:.9rem;font-weight:700;color:#e0eeff}
+        .rev-user{font-size:.75rem;color:rgba(160,200,255,.33)}
+        .rev-date{font-size:.74rem;color:rgba(160,200,255,.28)}
+        .rev-comment{font-size:.87rem;color:rgba(160,200,255,.6);line-height:1.65}
+        .mini-review{background:rgba(26,106,255,.04);border-radius:10px;padding:.7rem .9rem;border:1px solid rgba(26,106,255,.1)}
         .filter-tabs{display:flex;gap:.45rem;flex-wrap:wrap;margin-bottom:.5rem}
-        .filter-tab{padding:.38rem .85rem;border-radius:20px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:rgba(255,255,255,.45);font-family:'Tajawal',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.35rem}
-        .filter-tab:hover{background:rgba(255,255,255,.09);color:#fff}
-        .filter-tab.active{background:rgba(245,158,11,.14);border-color:rgba(245,158,11,.35);color:#fbbf24}
-        .tab-count{background:rgba(255,255,255,.12);border-radius:20px;padding:.05rem .42rem;font-size:.72rem}
-        .filter-tab.active .tab-count{background:rgba(245,158,11,.2);color:#f59e0b}
-        .bd-card{background:rgba(255,255,255,.036);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:1.1rem 1.2rem;cursor:pointer;transition:border-color .2s,background .2s,transform .15s}
-        .bd-card:hover{border-color:rgba(245,158,11,.2);background:rgba(255,255,255,.05);transform:translateY(-1px)}
-        .bd-card.bd-open{border-color:rgba(245,158,11,.32);background:rgba(245,158,11,.04);transform:none}
-        .bd-card.bd-mine{border-color:rgba(56,189,248,.25)!important}
+        .filter-tab{padding:.38rem .85rem;border-radius:20px;border:1px solid rgba(26,106,255,.14);background:rgba(26,106,255,.04);color:rgba(160,200,255,.45);font-family:'Tajawal',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.35rem}
+        .filter-tab:hover{background:rgba(26,106,255,.1);color:#7ab8ff}
+        .filter-tab.active{background:rgba(26,106,255,.16);border-color:rgba(26,106,255,.4);color:#4a9fff}
+        .tab-count{background:rgba(26,106,255,.15);border-radius:20px;padding:.05rem .42rem;font-size:.72rem}
+        .filter-tab.active .tab-count{background:rgba(26,106,255,.25);color:#0aacff}
+        .bd-card{background:rgba(8,14,30,0.7);border:1px solid rgba(26,106,255,.12);border-radius:18px;padding:1.1rem 1.2rem;cursor:pointer;transition:border-color .2s,background .2s,transform .15s}
+        .bd-card:hover{border-color:rgba(26,106,255,.3);background:rgba(26,106,255,.05);transform:translateY(-1px)}
+        .bd-card.bd-open{border-color:rgba(10,172,255,.4);background:rgba(10,172,255,.04);transform:none}
+        .bd-card.bd-mine{border-color:rgba(74,159,255,.3)!important}
         .bd-head{display:flex;align-items:center;justify-content:space-between;gap:.7rem}
-        .bd-car-ico{width:44px;height:44px;background:rgba(245,158,11,.1);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0}
-        .bd-car-ico-active{background:rgba(56,189,248,.15)!important}
-        .bd-car-name{font-size:.98rem;font-weight:700;color:#fff;margin-bottom:.18rem}
-        .bd-user-name{font-size:.8rem;color:rgba(255,255,255,.4)}
+        .bd-car-ico{width:44px;height:44px;background:rgba(26,106,255,.1);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;border:1px solid rgba(26,106,255,.2)}
+        .bd-car-ico-active{background:rgba(10,172,255,.15)!important;border-color:rgba(10,172,255,.3)!important}
+        .bd-car-name{font-size:.98rem;font-weight:700;color:#e0eeff;margin-bottom:.18rem}
+        .bd-user-name{font-size:.8rem;color:rgba(160,200,255,.4)}
         .bd-quick{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.75rem}
-        .bd-tag{font-size:.74rem;padding:.22rem .62rem;border-radius:20px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.55)}
-        .bd-tag-warn{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.25);color:#fbbf24}
-        .bd-details{margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,.07);animation:bdSlide .25s ease}
-        .bd-section-title{font-size:.8rem;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.8px;margin-bottom:.55rem}
+        .bd-tag{font-size:.74rem;padding:.22rem .62rem;border-radius:20px;background:rgba(26,106,255,.08);border:1px solid rgba(26,106,255,.15);color:rgba(160,200,255,.55)}
+        .bd-tag-warn{background:rgba(10,172,255,.1);border-color:rgba(10,172,255,.25);color:#0aacff}
+        .bd-details{margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(26,106,255,.1);animation:bdSlide .25s ease}
+        .bd-section-title{font-size:.8rem;font-weight:700;color:rgba(160,200,255,.35);letter-spacing:.8px;margin-bottom:.55rem}
         .bd-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:.3rem .9rem}
-        .bd-detail-item{display:flex;justify-content:space-between;align-items:flex-start;padding:.4rem 0;border-bottom:1px solid rgba(255,255,255,.04)}
+        .bd-detail-item{display:flex;justify-content:space-between;align-items:flex-start;padding:.4rem 0;border-bottom:1px solid rgba(26,106,255,.07)}
         .bd-detail-item:last-child{border-bottom:none}
-        .bd-detail-lbl{font-size:.8rem;color:rgba(255,255,255,.35);flex-shrink:0}
-        .bd-detail-val{font-size:.85rem;color:#fff;font-weight:500;text-align:left;word-break:break-word;max-width:58%}
-        .btn-map{display:flex;align-items:center;gap:.5rem;margin-top:.6rem;padding:.55rem 1rem;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.25);border-radius:10px;color:#38bdf8;font-family:'Tajawal',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .2s;width:100%;justify-content:center}
-        .btn-map:hover{background:rgba(56,189,248,.2)}
-        .bd-actions{display:flex;gap:.7rem;margin-top:1rem;padding-top:.9rem;border-top:1px solid rgba(255,255,255,.07);flex-wrap:wrap}
-        .btn-accept{flex:1;padding:.7rem;background:rgba(16,185,129,.14);border:1px solid rgba(16,185,129,.3);border-radius:11px;color:#6ee7b7;font-family:'Tajawal',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.4rem}
-        .btn-accept:hover:not(:disabled){background:rgba(16,185,129,.25);border-color:rgba(16,185,129,.5)}
+        .bd-detail-lbl{font-size:.8rem;color:rgba(160,200,255,.35);flex-shrink:0}
+        .bd-detail-val{font-size:.85rem;color:#e0eeff;font-weight:500;text-align:left;word-break:break-word;max-width:58%}
+        .btn-map{display:flex;align-items:center;gap:.5rem;margin-top:.6rem;padding:.55rem 1rem;background:rgba(26,106,255,.1);border:1px solid rgba(26,106,255,.28);border-radius:10px;color:#4a9fff;font-family:'Tajawal',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .2s;width:100%;justify-content:center}
+        .btn-map:hover{background:rgba(26,106,255,.2)}
+        .bd-actions{display:flex;gap:.7rem;margin-top:1rem;padding-top:.9rem;border-top:1px solid rgba(26,106,255,.1);flex-wrap:wrap}
+        .btn-accept{flex:1;padding:.7rem;background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.28);border-radius:11px;color:#34d399;font-family:'Tajawal',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.4rem}
+        .btn-accept:hover:not(:disabled){background:rgba(52,211,153,.22);border-color:rgba(52,211,153,.45)}
         .btn-accept:disabled{opacity:.5;cursor:not-allowed}
-        .btn-report{width:100%;padding:.7rem;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.3);border-radius:11px;color:#a78bfa;font-family:'Tajawal',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.4rem;margin-top:.3rem}
-        .btn-report:hover{background:rgba(167,139,250,.22);border-color:rgba(167,139,250,.5)}
-        .prop-count-badge{font-size:.7rem;padding:.18rem .5rem;background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.25);border-radius:20px;color:#38bdf8}
+        .btn-report{width:100%;padding:.7rem;background:rgba(122,184,255,.1);border:1px solid rgba(122,184,255,.28);border-radius:11px;color:#7ab8ff;font-family:'Tajawal',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.4rem;margin-top:.3rem}
+        .btn-report:hover{background:rgba(122,184,255,.2);border-color:rgba(122,184,255,.45)}
+        .prop-count-badge{font-size:.7rem;padding:.18rem .5rem;background:rgba(10,172,255,.1);border:1px solid rgba(10,172,255,.25);border-radius:20px;color:#0aacff}
         .prop-mine-badge{font-size:.72rem;font-weight:700;padding:.2rem .6rem;border-radius:20px}
-        .prop-mine-pending{background:rgba(245,158,11,.14);color:#fbbf24;border:1px solid rgba(245,158,11,.3)}
-        .prop-mine-accepted{background:rgba(16,185,129,.14);color:#6ee7b7;border:1px solid rgba(16,185,129,.3)}
+        .prop-mine-pending{background:rgba(26,106,255,.14);color:#4a9fff;border:1px solid rgba(26,106,255,.3)}
+        .prop-mine-accepted{background:rgba(52,211,153,.12);color:#34d399;border:1px solid rgba(52,211,153,.28)}
         .prop-mine-rejected{background:rgba(239,68,68,.1);color:#fca5a5;border:1px solid rgba(239,68,68,.25)}
-        .my-proposal-box{background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.18);border-radius:14px;padding:1rem;margin-top:.9rem}
+        .my-proposal-box{background:rgba(26,106,255,.06);border:1px solid rgba(26,106,255,.2);border-radius:14px;padding:1rem;margin-top:.9rem}
         .btn-withdraw{padding:.45rem .9rem;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:9px;color:#fca5a5;font-family:'Tajawal',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.35rem;margin-top:.7rem}
         .btn-withdraw:hover:not(:disabled){background:rgba(239,68,68,.2)}
         .btn-withdraw:disabled{opacity:.5;cursor:not-allowed}
-        .modal-bd-info{background:rgba(255,255,255,.05);border-radius:11px;padding:.8rem 1rem;margin-bottom:1.2rem;border-right:3px solid #f59e0b}
-        .service-type-btn{flex:1;padding:.65rem;border-radius:11px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:rgba(255,255,255,.5);font-family:'Tajawal',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;text-align:center;transition:all .2s}
-        .service-type-btn.active{background:rgba(245,158,11,.14);border-color:rgba(245,158,11,.35);color:#fbbf24}
-        .prop-card{background:rgba(255,255,255,.036);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:1.2rem 1.4rem}
-        .prop-card-accepted{border-color:rgba(16,185,129,.3)!important;background:rgba(16,185,129,.04)!important}
-        .prop-card-rejected{border-color:rgba(239,68,68,.2)!important;opacity:.7}
+        .modal-bd-info{background:rgba(26,106,255,.06);border-radius:11px;padding:.8rem 1rem;margin-bottom:1.2rem;border-right:3px solid #1a6aff}
+        .service-type-btn{flex:1;padding:.65rem;border-radius:11px;border:1px solid rgba(26,106,255,.15);background:rgba(26,106,255,.04);color:rgba(160,200,255,.5);font-family:'Tajawal',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;text-align:center;transition:all .2s}
+        .service-type-btn.active{background:rgba(26,106,255,.16);border-color:rgba(26,106,255,.4);color:#4a9fff}
+        .prop-card{background:rgba(8,14,30,0.7);border:1px solid rgba(26,106,255,.12);border-radius:18px;padding:1.2rem 1.4rem}
+        .prop-card-accepted{border-color:rgba(52,211,153,.28)!important;background:rgba(52,211,153,.04)!important}
+        .prop-card-rejected{border-color:rgba(239,68,68,.18)!important;opacity:.7}
         .prop-top{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:.9rem}
-        .prop-bd-title{font-size:.95rem;font-weight:700;color:#fff;margin-bottom:.25rem}
-        .prop-bd-user{font-size:.8rem;color:rgba(255,255,255,.38)}
+        .prop-bd-title{font-size:.95rem;font-weight:700;color:#e0eeff;margin-bottom:.25rem}
+        .prop-bd-user{font-size:.8rem;color:rgba(160,200,255,.38)}
         .prop-details{display:flex;flex-wrap:wrap;gap:.5rem 1.5rem;margin-bottom:.7rem}
         .prop-detail{display:flex;align-items:center;gap:.4rem}
-        .prop-lbl{font-size:.78rem;color:rgba(255,255,255,.35)}
-        .prop-val{font-size:.82rem;color:rgba(255,255,255,.65);font-weight:600}
-        .prop-desc{font-size:.87rem;color:rgba(255,255,255,.55);line-height:1.6;padding:.6rem .8rem;background:rgba(255,255,255,.04);border-radius:10px;margin-bottom:.5rem}
-        .prop-notes{font-size:.8rem;color:rgba(255,255,255,.35);padding:.4rem .7rem;border-right:2px solid rgba(255,255,255,.12)}
+        .prop-lbl{font-size:.78rem;color:rgba(160,200,255,.35)}
+        .prop-val{font-size:.82rem;color:rgba(160,200,255,.65);font-weight:600}
+        .prop-desc{font-size:.87rem;color:rgba(160,200,255,.55);line-height:1.6;padding:.6rem .8rem;background:rgba(26,106,255,.04);border-radius:10px;margin-bottom:.5rem;border:1px solid rgba(26,106,255,.1)}
+        .prop-notes{font-size:.8rem;color:rgba(160,200,255,.35);padding:.4rem .7rem;border-right:2px solid rgba(26,106,255,.2)}
         .rpt-steps{display:flex;align-items:center;margin-bottom:1.8rem;gap:0}
         .rpt-step{display:flex;flex-direction:column;align-items:center;position:relative;flex:1}
-        .rpt-step-num{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:700;color:rgba(255,255,255,.35);transition:all .3s;z-index:1}
-        .rpt-step-lbl{font-size:.72rem;color:rgba(255,255,255,.3);margin-top:.4rem;white-space:nowrap}
-        .rpt-step-line{position:absolute;top:17px;right:calc(50% + 17px);left:calc(-50% + 17px);height:2px;background:rgba(255,255,255,.1);z-index:0}
-        .rpt-step-done .rpt-step-num{background:rgba(16,185,129,.2);border-color:#10b981;color:#6ee7b7}
-        .rpt-step-done .rpt-step-lbl{color:#6ee7b7}
-        .rpt-step-done .rpt-step-line{background:rgba(16,185,129,.4)}
-        .rpt-step-active .rpt-step-num{background:rgba(245,158,11,.2);border-color:#f59e0b;color:#fbbf24;box-shadow:0 0 0 4px rgba(245,158,11,.15)}
-        .rpt-step-active .rpt-step-lbl{color:#fbbf24}
+        .rpt-step-num{width:34px;height:34px;border-radius:50%;background:rgba(26,106,255,.07);border:2px solid rgba(26,106,255,.2);display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:700;color:rgba(160,200,255,.35);transition:all .3s;z-index:1}
+        .rpt-step-lbl{font-size:.72rem;color:rgba(160,200,255,.3);margin-top:.4rem;white-space:nowrap}
+        .rpt-step-line{position:absolute;top:17px;right:calc(50% + 17px);left:calc(-50% + 17px);height:2px;background:rgba(26,106,255,.15);z-index:0}
+        .rpt-step-done .rpt-step-num{background:rgba(52,211,153,.18);border-color:#34d399;color:#34d399}
+        .rpt-step-done .rpt-step-lbl{color:#34d399}
+        .rpt-step-done .rpt-step-line{background:rgba(52,211,153,.35)}
+        .rpt-step-active .rpt-step-num{background:rgba(26,106,255,.18);border-color:#1a6aff;color:#4a9fff;box-shadow:0 0 0 4px rgba(26,106,255,.15)}
+        .rpt-step-active .rpt-step-lbl{color:#4a9fff}
         .part-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem}
-        .btn-add-part{margin-top:.4rem;padding:.4rem .85rem;background:rgba(56,189,248,.08);border:1px dashed rgba(56,189,248,.3);border-radius:9px;color:#38bdf8;font-family:'Tajawal',sans-serif;font-size:.83rem;cursor:pointer;transition:all .2s}
-        .btn-add-part:hover{background:rgba(56,189,248,.15)}
-        .total-box{display:flex;justify-content:space-between;align-items:center;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:14px;padding:1rem 1.2rem}
+        .btn-add-part{margin-top:.4rem;padding:.4rem .85rem;background:rgba(10,172,255,.07);border:1px dashed rgba(10,172,255,.28);border-radius:9px;color:#0aacff;font-family:'Tajawal',sans-serif;font-size:.83rem;cursor:pointer;transition:all .2s}
+        .btn-add-part:hover{background:rgba(10,172,255,.14)}
+        .total-box{display:flex;justify-content:space-between;align-items:center;background:rgba(26,106,255,.08);border:1px solid rgba(26,106,255,.22);border-radius:14px;padding:1rem 1.2rem}
         @media(max-width:680px){
           .sidebar{display:none}.main{padding:1rem}.form-grid{grid-template-columns:1fr}.fg.full{grid-column:1}
           .bd-detail-grid{grid-template-columns:1fr}.bd-actions{flex-direction:column}
@@ -1040,7 +1016,7 @@ export default function MechanicDashboard() {
             </button>
           ))}
           <div style={{ marginTop:'auto', paddingTop:'1rem' }}>
-            <button className="nav-btn" onClick={handleLogout} style={{ color:'rgba(239,68,68,.7)', width:'100%' }}>
+            <button className="nav-btn" onClick={handleLogout} style={{ color:'rgba(239,68,68,.65)', width:'100%' }}>
               <div className="nav-left"><span className="nav-ico">🚪</span>تسجيل الخروج</div>
             </button>
           </div>
