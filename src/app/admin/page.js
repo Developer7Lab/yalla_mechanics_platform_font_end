@@ -680,7 +680,7 @@ export default function AdminDashboard() {
   const navItems = [
     { key: 'overview',    icon: '📊', label: 'نظرة عامة'      },
     { key: 'profile',     icon: '🛡️', label: 'ملفي الشخصي'   },
-    { key: 'requests',    icon: '📋', label: 'طلبات الموقع', badge: pending },
+    
     { key: 'mechanics',   icon: '🔧', label: 'الميكانيكيون'   },
     { key: 'users',       icon: '👥', label: 'المستخدمون'     },
     { key: 'breakdowns',  icon: '🚨', label: 'منشورات العطل'  },
